@@ -7,7 +7,10 @@ import (
 
 func main() {
 	root, g := cli.NewRoot()
-	root.AddCommand(commands.NewAuth(g))
+	root.AddCommand(
+		commands.NewAuth(g),
+		commands.NewWorkspace(g),
+	)
 	if err := root.Execute(); err != nil {
 		cli.Exit(err)
 	}
