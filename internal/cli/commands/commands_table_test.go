@@ -46,7 +46,7 @@ func TestSimpleListCommands_HitExpectedPath(t *testing.T) {
 		{"repos list", NewRepos, []string{"list"}, "/repositories/code", "GET"},
 		{"repos get", NewRepos, []string{"get", "3"}, "/repositories/code/3", "GET"},
 		{"issues list", NewIssues, []string{"list"}, "/open-issue-groups", "GET"},
-		{"issues get", NewIssues, []string{"get", "11"}, "/open-issue-groups/11", "GET"},
+		{"issues get", NewIssues, []string{"get", "11"}, "/issues/groups/11", "GET"},
 		{"teams list", NewTeams, []string{"list"}, "/teams", "GET"},
 		{"activity top-level", NewActivity, []string{}, "/activity-log", "GET"},
 	}

@@ -187,7 +187,7 @@ func issuesGet(g *cli.Globals) *cobra.Command {
 				return err
 			}
 			var raw any
-			if err := c.Get(cmd.Context(), "/open-issue-groups/"+args[0], nil, &raw); err != nil {
+			if err := c.Get(cmd.Context(), "/issues/groups/"+args[0], nil, &raw); err != nil {
 				return err
 			}
 			return g.Renderer().Render(raw)
