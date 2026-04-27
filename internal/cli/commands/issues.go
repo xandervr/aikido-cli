@@ -47,7 +47,31 @@ func (g *IssueGroup) UnmarshalJSON(b []byte) error {
 			g.Repo = pickStr(v, "name", "external_id")
 		}
 	}
-	g.Status = pickStr(m, "status", "state", "issue_status")
+	if g.Repo == "" {
+		if locs, ok := m["locations"].([]any); ok && len(locs) > 0 {
+			if first, ok := locs[0].(map[string]any); ok {
+				g.Repo = pickStr(first,
+					"code_repo_name", "repo_name", "repository_name",
+					"container_repo_name", "name", "external_id",
+				)
+				if g.Repo == "" {
+					if cr, ok := first["code_repo"].(map[string]any); ok {
+						g.Repo = pickStr(cr, "name", "external_id")
+					}
+				}
+				if g.Repo == "" {
+					if cr, ok := first["repository"].(map[string]any); ok {
+						g.Repo = pickStr(cr, "name", "external_id")
+					}
+				}
+			}
+			// If the issue spans multiple repos, mark that.
+			if g.Repo != "" && len(locs) > 1 {
+				g.Repo = fmt.Sprintf("%s (+%d)", g.Repo, len(locs)-1)
+			}
+		}
+	}
+	g.Status = pickStr(m, "group_status", "status", "state", "issue_status")
 	if g.Status == "" {
 		if b, ok := m["is_open"].(bool); ok {
 			if b {
