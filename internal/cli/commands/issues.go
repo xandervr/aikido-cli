@@ -50,25 +50,45 @@ func (g *IssueGroup) UnmarshalJSON(b []byte) error {
 	}
 	if g.Repo == "" {
 		if locs, ok := m["locations"].([]any); ok && len(locs) > 0 {
-			if first, ok := locs[0].(map[string]any); ok {
-				g.Repo = pickStr(first,
+			// locations[] is one entry per *place* the issue was found
+			// (lockfile, branch, monorepo subpath), not per repo.
+			// Dedupe by repo name so the "(+N)" annotation reflects
+			// distinct repos, not raw location count.
+			seen := map[string]struct{}{}
+			order := []string{}
+			for _, raw := range locs {
+				loc, ok := raw.(map[string]any)
+				if !ok {
+					continue
+				}
+				name := pickStr(loc,
 					"code_repo_name", "repo_name", "repository_name",
 					"container_repo_name", "name", "external_id",
 				)
-				if g.Repo == "" {
-					if cr, ok := first["code_repo"].(map[string]any); ok {
-						g.Repo = pickStr(cr, "name", "external_id")
+				if name == "" {
+					if cr, ok := loc["code_repo"].(map[string]any); ok {
+						name = pickStr(cr, "name", "external_id")
 					}
 				}
-				if g.Repo == "" {
-					if cr, ok := first["repository"].(map[string]any); ok {
-						g.Repo = pickStr(cr, "name", "external_id")
+				if name == "" {
+					if cr, ok := loc["repository"].(map[string]any); ok {
+						name = pickStr(cr, "name", "external_id")
 					}
 				}
+				if name == "" {
+					continue
+				}
+				if _, dup := seen[name]; dup {
+					continue
+				}
+				seen[name] = struct{}{}
+				order = append(order, name)
 			}
-			// If the issue spans multiple repos, mark that.
-			if g.Repo != "" && len(locs) > 1 {
-				g.Repo = fmt.Sprintf("%s (+%d)", g.Repo, len(locs)-1)
+			if len(order) > 0 {
+				g.Repo = order[0]
+				if len(order) > 1 {
+					g.Repo = fmt.Sprintf("%s (+%d)", g.Repo, len(order)-1)
+				}
 			}
 		}
 	}
