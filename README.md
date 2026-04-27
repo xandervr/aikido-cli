@@ -9,12 +9,39 @@ open vulnerabilities, and manage teams without bespoke wrappers around `curl`.
 ```bash
 git clone <this repo>
 cd aikido-cli
-make install        # puts `aikido` on PATH (via $GOPATH/bin)
+make install                # → ~/.local/bin/aikido (no sudo)
 # or:
-make build          # produces ./bin/aikido
+make install-system         # → /usr/local/bin/aikido (sudo)
+# or:
+make build                  # only produce ./bin/aikido; install yourself
 ```
 
-Requires Go 1.22+.
+Requires Go 1.22+. `make install` warns if `~/.local/bin` is not on your `$PATH`.
+
+### Shell completions
+
+```bash
+make install-completions    # writes zsh, bash, and fish completion files
+```
+
+For **zsh** (most macOS users), make sure your `~/.zshrc` contains, **before**
+any `compinit` call:
+
+```zsh
+fpath=(~/.zsh/completions $fpath)
+autoload -Uz compinit && compinit
+```
+
+If completions still don't show up after running `make install-completions`,
+zsh's compdump cache is stale — bust it once:
+
+```bash
+rm -f ~/.zcompdump*
+exec zsh -l
+```
+
+After that, `aikido <TAB>`, `aikido issues list --<TAB>` etc. complete
+subcommands and flags.
 
 ## Authenticate
 
