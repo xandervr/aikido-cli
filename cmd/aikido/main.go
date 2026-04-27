@@ -12,6 +12,7 @@ func main() {
 		commands.NewWorkspace(g),
 		commands.NewRepos(g),
 		commands.NewIssues(g),
+		commands.NewTeams(g),
 	)
 	if err := root.Execute(); err != nil {
 		cli.Exit(err)
