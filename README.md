@@ -16,6 +16,28 @@ make build          # produces ./bin/aikido
 
 Requires Go 1.22+.
 
+
+## ⚠️  About API tokens
+
+Aikido issues several token *audiences*. Only one works with this CLI:
+
+| Audience claim | Source                                  | Works with this CLI? |
+|----------------|-----------------------------------------|----------------------|
+| `ide.aikido`   | Aikido IDE plugin / VS Code extension   | ❌ No (returns 401)  |
+| Public REST    | Settings → Integrations → REST API → "Generate token" | ✅ Yes |
+
+You can decode any token at jwt.io to inspect the `aud` claim. If the token
+came from your IDE plugin or `~/.claude/settings.json` (where the IDE plugin
+typically writes it), it will fail with `401 Invalid request. The tokens
+signature is invalid.` — that error means the audience is wrong, not the
+signature.
+
+To create a public-API token:
+
+1. Open https://app.aikido.dev → **Settings**.
+2. **Integrations** → **REST API**.
+3. Click **Generate token**, copy it, run `aikido auth login`.
+
 ## Authenticate
 
 ```bash
