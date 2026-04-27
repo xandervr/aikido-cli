@@ -1,24 +1,96 @@
 package commands
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/spf13/cobra"
 	"github.com/xandervr/aikido-cli/internal/cli"
 )
 
+// IssueGroup is a schema-tolerant view of an Aikido issue group.
+//
+// The Aikido response shape varies a bit by issue type (SAST vs open-source
+// vs leaked-secret all carry slightly different fields). UnmarshalJSON probes
+// a list of known field-name variants so the table renderer fills consistently.
+// MarshalJSON returns the raw response so `--json` output preserves every
+// field the API returned, untouched.
 type IssueGroup struct {
-	ID       int    `json:"id"        aikido:"column,header=ID"`
-	Title    string `json:"title"     aikido:"column,header=Title"`
-	Severity string `json:"severity"  aikido:"column,header=Severity"`
-	Type     string `json:"type"      aikido:"column,header=Type"`
-	RepoName string `json:"repo_name" aikido:"column,header=Repo"`
-	Status   string `json:"status"    aikido:"column,header=Status"`
+	ID       int64  `aikido:"column,header=ID"`
+	Title    string `aikido:"column,header=Title"`
+	Severity string `aikido:"column,header=Severity"`
+	Type     string `aikido:"column,header=Type"`
+	Repo     string `aikido:"column,header=Repo"`
+	Status   string `aikido:"column,header=Status"`
+
+	raw json.RawMessage
+}
+
+func (g *IssueGroup) UnmarshalJSON(b []byte) error {
+	g.raw = append(g.raw[:0], b...)
+	var m map[string]any
+	if err := json.Unmarshal(b, &m); err != nil {
+		return err
+	}
+	g.ID = pickInt(m, "id", "issue_group_id", "group_id")
+	g.Title = pickStr(m, "title", "name", "summary", "rule_name")
+	g.Severity = pickStr(m, "severity", "severity_score", "priority")
+	g.Type = pickStr(m, "type", "issue_type", "category")
+	g.Repo = pickStr(m, "repo_name", "code_repo_name", "repository_name", "repo", "container_repo_name")
+	if g.Repo == "" {
+		if v, ok := m["code_repo"].(map[string]any); ok {
+			g.Repo = pickStr(v, "name", "external_id")
+		}
+	}
+	if g.Repo == "" {
+		if v, ok := m["repository"].(map[string]any); ok {
+			g.Repo = pickStr(v, "name", "external_id")
+		}
+	}
+	g.Status = pickStr(m, "status", "state", "issue_status")
+	if g.Status == "" {
+		if b, ok := m["is_open"].(bool); ok {
+			if b {
+				g.Status = "open"
+			} else {
+				g.Status = "closed"
+			}
+		}
+	}
+	if g.Status == "" {
+		if b, ok := m["ignored"].(bool); ok && b {
+			g.Status = "ignored"
+		}
+	}
+	if g.Status == "" {
+		if b, ok := m["snoozed"].(bool); ok && b {
+			g.Status = "snoozed"
+		}
+	}
+	return nil
+}
+
+// MarshalJSON returns the raw response unchanged so `--json` output never
+// loses any field.
+func (g IssueGroup) MarshalJSON() ([]byte, error) {
+	if len(g.raw) > 0 {
+		return g.raw, nil
+	}
+	type alias struct {
+		ID       int64  `json:"id"`
+		Title    string `json:"title"`
+		Severity string `json:"severity"`
+		Type     string `json:"type"`
+		Repo     string `json:"repo"`
+		Status   string `json:"status"`
+	}
+	return json.Marshal(alias{g.ID, g.Title, g.Severity, g.Type, g.Repo, g.Status})
 }
 
 type issuesListOpts struct {
 	Severity string
 	Status   string
+	Type     string
 	Repo     int
 	Team     int
 	Page     int
@@ -48,6 +120,9 @@ func issuesList(g *cli.Globals) *cobra.Command {
 			if opts.Status != "" {
 				q["filter_status"] = opts.Status
 			}
+			if opts.Type != "" {
+				q["filter_issue_type"] = opts.Type
+			}
 			if opts.Repo > 0 {
 				q["filter_code_repo_id"] = fmt.Sprintf("%d", opts.Repo)
 			}
@@ -69,10 +144,11 @@ func issuesList(g *cli.Globals) *cobra.Command {
 	}
 	cmd.Flags().StringVar(&opts.Severity, "severity", "", "filter: critical|high|medium|low")
 	cmd.Flags().StringVar(&opts.Status, "status", "", "filter: open|ignored|snoozed|closed")
-	cmd.Flags().IntVar(&opts.Repo, "repo", 0, "filter by repo ID")
+	cmd.Flags().StringVar(&opts.Type, "type", "", "filter: open_source|leaked_secret|sast|iac|cloud|docker_container|cloud_instance|surface_monitoring|malware|eol|mobile|scm_security|ai_pentest|license")
+	cmd.Flags().IntVar(&opts.Repo, "repo", 0, "filter by code repo ID")
 	cmd.Flags().IntVar(&opts.Team, "team", 0, "filter by team ID")
 	cmd.Flags().IntVar(&opts.Page, "page", 0, "page (0-indexed)")
-	cmd.Flags().IntVar(&opts.PerPage, "per-page", 0, "page size")
+	cmd.Flags().IntVar(&opts.PerPage, "per-page", 0, "page size (server caps issues at 20)")
 	return cmd
 }
 
