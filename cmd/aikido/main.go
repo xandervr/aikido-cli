@@ -10,6 +10,7 @@ func main() {
 	root.AddCommand(
 		commands.NewAuth(g),
 		commands.NewWorkspace(g),
+		commands.NewRepos(g),
 	)
 	if err := root.Execute(); err != nil {
 		cli.Exit(err)
