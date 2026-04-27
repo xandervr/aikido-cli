@@ -3,6 +3,7 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/xandervr/aikido-cli/internal/cli"
@@ -141,9 +142,6 @@ func issuesList(g *cli.Globals) *cobra.Command {
 			if opts.Severity != "" {
 				q["filter_severity"] = opts.Severity
 			}
-			if opts.Status != "" {
-				q["filter_status"] = opts.Status
-			}
 			if opts.Type != "" {
 				q["filter_issue_type"] = opts.Type
 			}
@@ -163,11 +161,24 @@ func issuesList(g *cli.Globals) *cobra.Command {
 			if err := c.Get(cmd.Context(), "/open-issue-groups", q, &groups); err != nil {
 				return err
 			}
+			// The Aikido API does not support filter_status server-side
+			// (only severity, type, repo, team). Filter client-side so the
+			// flag has the effect users expect.
+			if opts.Status != "" {
+				want := strings.ToLower(opts.Status)
+				kept := groups[:0]
+				for _, gr := range groups {
+					if strings.ToLower(gr.Status) == want {
+						kept = append(kept, gr)
+					}
+				}
+				groups = kept
+			}
 			return g.Renderer().Render(groups)
 		},
 	}
 	cmd.Flags().StringVar(&opts.Severity, "severity", "", "filter: critical|high|medium|low")
-	cmd.Flags().StringVar(&opts.Status, "status", "", "filter: open|ignored|snoozed|closed")
+	cmd.Flags().StringVar(&opts.Status, "status", "", "filter (CLIENT-side; API has no status filter): task_open|task_in_progress|task_closed|task_done|todo|new|ignored|snoozed")
 	cmd.Flags().StringVar(&opts.Type, "type", "", "filter: open_source|leaked_secret|sast|iac|cloud|docker_container|cloud_instance|surface_monitoring|malware|eol|mobile|scm_security|ai_pentest|license")
 	cmd.Flags().IntVar(&opts.Repo, "repo", 0, "filter by code repo ID")
 	cmd.Flags().IntVar(&opts.Team, "team", 0, "filter by team ID")
