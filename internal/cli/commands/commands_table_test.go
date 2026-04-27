@@ -64,7 +64,7 @@ func TestSimpleListCommands_HitExpectedPath(t *testing.T) {
 				}
 			}))
 			defer srv.Close()
-			t.Setenv("AIKIDO_API_KEY", "test")
+			t.Setenv("AIKIDO_ACCESS_TOKEN", "test")
 			t.Setenv("AIKIDO_BASE_URL", srv.URL)
 
 			root, g := cli.NewRoot()
@@ -97,7 +97,7 @@ func TestTeamsCreate_PostsName(t *testing.T) {
 		_, _ = w.Write([]byte(`{"id":1,"name":"Platform"}`))
 	}))
 	defer srv.Close()
-	t.Setenv("AIKIDO_API_KEY", "k")
+	t.Setenv("AIKIDO_ACCESS_TOKEN", "k")
 	t.Setenv("AIKIDO_BASE_URL", srv.URL)
 
 	root, g := cli.NewRoot()

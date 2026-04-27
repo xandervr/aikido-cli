@@ -16,38 +16,57 @@ make build          # produces ./bin/aikido
 
 Requires Go 1.22+.
 
+## Authenticate
 
-## ⚠️  About API tokens
-
-Aikido issues several token *audiences*. Only one works with this CLI:
-
-| Audience claim | Source                                  | Works with this CLI? |
-|----------------|-----------------------------------------|----------------------|
-| `ide.aikido`   | Aikido IDE plugin / VS Code extension   | ❌ No (returns 401)  |
-| Public REST    | Settings → Integrations → REST API → "Generate token" | ✅ Yes |
-
-You can decode any token at jwt.io to inspect the `aud` claim. If the token
-came from your IDE plugin or `~/.claude/settings.json` (where the IDE plugin
-typically writes it), it will fail with `401 Invalid request. The tokens
-signature is invalid.` — that error means the audience is wrong, not the
-signature.
-
-To create a public-API token:
+The Aikido public REST API uses OAuth2 with the **client_credentials** grant.
+You need a `client_id` and `client_secret` pair, generated from the Aikido
+web UI:
 
 1. Open https://app.aikido.dev → **Settings**.
 2. **Integrations** → **REST API**.
-3. Click **Generate token**, copy it, run `aikido auth login`.
+3. Click **Generate token** — you'll get a **client ID** and a **client secret**.
 
-## Authenticate
+Then run:
 
 ```bash
-aikido auth login            # prompts for the key; stores in macOS Keychain
-aikido auth status           # source, masked key, region, expiry
-aikido auth logout           # remove the stored credential
+aikido auth login
+# Aikido client ID:    <paste>
+# Aikido client secret: <paste, hidden>
+# ✓ Verified workspace "Focus" (id 12345)
+# ✓ Stored client credentials in OS keychain
+# ✓ Cached access token (valid for 59m30s)
 ```
 
-You can also set `AIKIDO_API_KEY` in your environment — env always wins over
-Keychain. This is the path Claude Code agents take.
+The CLI does the OAuth exchange (`POST /api/oauth/token`) on your behalf,
+then caches the access token under `$XDG_CACHE_HOME/aikido-cli/token.json`
+(`~/Library/Caches/aikido-cli/token.json` on macOS) until it expires.
+
+Other auth commands:
+
+```bash
+aikido auth status     # source, masked client_id, cached-token status
+aikido auth refresh    # force a fresh token exchange
+aikido auth logout     # delete creds + cached token
+```
+
+### Non-interactive auth (CI / agents)
+
+Either provide the credentials in env vars and let the CLI exchange them:
+
+```bash
+export AIKIDO_CLIENT_ID=...
+export AIKIDO_CLIENT_SECRET=...
+aikido repos list
+```
+
+…or, if you've already exchanged a token externally, hand it directly:
+
+```bash
+export AIKIDO_ACCESS_TOKEN=...
+aikido repos list
+```
+
+`AIKIDO_ACCESS_TOKEN` skips the OAuth exchange entirely.
 
 ## Examples (humans)
 
@@ -62,7 +81,7 @@ aikido teams update 42 --name "Platform Eng"
 aikido teams delete 42 --confirm
 ```
 
-Output auto-switches: tables on a TTY, JSON when piped:
+Output auto-switches: tables on a TTY, JSON when piped.
 
 ```bash
 aikido issues list                # table
@@ -81,13 +100,15 @@ aikido issues list --severity critical | jq 'length'
 aikido teams list | jq '.[] | select(.name=="Platform") | .id'
 ```
 
-If the host environment has `AIKIDO_API_KEY` set, no `auth login` is required.
+If `AIKIDO_CLIENT_ID` and `AIKIDO_CLIENT_SECRET` are present in the agent's
+environment, no `auth login` is needed — the CLI exchanges them on demand and
+caches the token.
 
 ## Commands
 
 | Group         | Subcommands                                              |
 |---------------|----------------------------------------------------------|
-| auth          | login, logout, status                                    |
+| auth          | login, logout, status, refresh                           |
 | workspace     | info, config-errors, introspect                          |
 | repos         | list, get, sbom                                          |
 | issues        | list, get, export                                        |
@@ -109,33 +130,37 @@ If the host environment has `AIKIDO_API_KEY` set, no `auth login` is required.
 | cve, changelog, malware-packages | top-level shortcuts                   |
 | report        | pdf                                                      |
 
-`workspace introspect` dumps the live OpenAPI spec — useful for spotting any
-endpoint not yet wired into a subcommand.
+`workspace introspect` dumps the live OpenAPI spec — useful for spotting
+endpoints not yet wired into a subcommand.
 
 ## Global flags
 
-| Flag         | Effect                                              |
-|--------------|-----------------------------------------------------|
-| --json       | Force JSON output                                   |
-| --table      | Force table output                                  |
-| --no-color   | Disable ANSI colors                                 |
-| --debug      | Log HTTP requests/responses to stderr               |
-| --base-url   | Override base URL                                   |
-| --api-key    | Override API key                                    |
+| Flag             | Effect                                              |
+|------------------|-----------------------------------------------------|
+| --json           | Force JSON output                                   |
+| --table          | Force table output                                  |
+| --no-color       | Disable ANSI colors                                 |
+| --debug          | Log HTTP requests/responses to stderr               |
+| --base-url       | Override API base URL                               |
+| --client-id      | OAuth client ID                                     |
+| --client-secret  | OAuth client secret                                 |
+| --access-token   | Pre-exchanged Bearer token (skips OAuth)            |
 
 ## Environment variables
 
-| Variable         | Effect                                |
-|------------------|---------------------------------------|
-| AIKIDO_API_KEY   | API token (wins over keychain)        |
-| AIKIDO_BASE_URL  | Override base URL                     |
-| NO_COLOR         | Disable colors (standard convention)  |
+| Variable               | Effect                                                |
+|------------------------|-------------------------------------------------------|
+| AIKIDO_CLIENT_ID       | OAuth client ID (used to exchange for an access token)|
+| AIKIDO_CLIENT_SECRET   | OAuth client secret                                   |
+| AIKIDO_ACCESS_TOKEN    | Pre-exchanged Bearer token (skips OAuth)              |
+| AIKIDO_BASE_URL        | Override API base URL                                 |
+| NO_COLOR               | Disable colors (standard convention)                  |
 
 ## Exit codes
 
 - `0` — success
 - `1` — API or network error
-- `2` — missing or invalid auth
+- `2` — missing or invalid auth (no creds, OAuth exchange failed, 401/403)
 - `3` — usage / validation error (also: `--confirm` missing on destructive ops)
 
 ## Destructive operations
