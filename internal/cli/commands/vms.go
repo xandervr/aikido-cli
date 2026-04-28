@@ -18,7 +18,8 @@ func NewVMs(g *cli.Globals) *cobra.Command {
 }
 
 func vmsSBOM(g *cli.Globals) *cobra.Command {
-	return &cobra.Command{
+	var format string
+	cmd := &cobra.Command{
 		Use:   "sbom <id>",
 		Short: "Export the SBOM for a virtual machine",
 		Args:  cobra.ExactArgs(1),
@@ -27,7 +28,7 @@ func vmsSBOM(g *cli.Globals) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			body, _, err := c.GetRaw(context.Background(), "/virtual-machines/"+args[0]+"/sbom", nil)
+			body, _, err := c.GetRaw(context.Background(), "/virtual-machines/"+args[0]+"/export/"+format, nil)
 			if err != nil {
 				return err
 			}
@@ -35,4 +36,6 @@ func vmsSBOM(g *cli.Globals) *cobra.Command {
 			return nil
 		},
 	}
+	cmd.Flags().StringVar(&format, "format", "sbom", "export format: sbom|sbom_spdx|csv")
+	return cmd
 }

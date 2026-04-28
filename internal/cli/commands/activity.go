@@ -17,16 +17,16 @@ func NewActivity(g *cli.Globals) *cobra.Command {
 			}
 			q := map[string]string{}
 			if from != "" {
-				q["from"] = from
+				q["start"] = from
 			}
 			if to != "" {
-				q["to"] = to
+				q["end"] = to
 			}
 			if user != "" {
-				q["user_id"] = user
+				q["user_type_filter"] = user
 			}
 			var raw any
-			if err := c.Get(cmd.Context(), "/activity-log", q, &raw); err != nil {
+			if err := c.Get(cmd.Context(), "/report/activityLog", q, &raw); err != nil {
 				return err
 			}
 			return g.Renderer().Render(raw)
@@ -34,6 +34,6 @@ func NewActivity(g *cli.Globals) *cobra.Command {
 	}
 	cmd.Flags().StringVar(&from, "from", "", "ISO date (inclusive)")
 	cmd.Flags().StringVar(&to, "to", "", "ISO date (inclusive)")
-	cmd.Flags().StringVar(&user, "user", "", "filter by user_id")
+	cmd.Flags().StringVar(&user, "user", "", "filter by user type")
 	return cmd
 }

@@ -18,10 +18,10 @@ func NewPRChecks(g *cli.Globals) *cobra.Command {
 			}
 			q := map[string]string{}
 			if repo != "" {
-				q["repo_id"] = repo
+				q["filter_code_repo_id"] = repo
 			}
 			var raw any
-			if err := c.Get(cmd.Context(), "/ci-scans", q, &raw); err != nil {
+			if err := c.Get(cmd.Context(), "/report/ciScans", q, &raw); err != nil {
 				return err
 			}
 			return g.Renderer().Render(raw)

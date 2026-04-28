@@ -157,6 +157,14 @@ caches the token.
 | cve, changelog, malware-packages | top-level shortcuts                   |
 | report        | pdf                                                      |
 
+`changelog <package>` requires `--from`, `--to`, and `--language`. `report pdf`
+requires `--sections` (comma-separated Aikido report sections) and accepts
+`--team`. `vms sbom` defaults to `--format sbom`; use `sbom_spdx` or `csv` when
+needed.
+
+`teams link` / `teams unlink` support `repo`, `container`, `cloud`, `app`, and
+`domain` resource types.
+
 `workspace introspect` dumps the live OpenAPI spec — useful for spotting
 endpoints not yet wired into a subcommand.
 

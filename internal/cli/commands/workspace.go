@@ -60,7 +60,7 @@ func workspaceIntrospect(g *cli.Globals) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			body, _, err := c.GetRaw(context.Background(), "/workspace/openapispec", nil)
+			body, _, err := c.GetRaw(context.Background(), "/openapi/spec", nil)
 			if err != nil {
 				return err
 			}
