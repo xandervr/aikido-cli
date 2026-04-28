@@ -4,13 +4,15 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/spf13/cobra"
 	"github.com/xandervr/aikido-cli/internal/cli"
 )
 
 func NewReport(g *cli.Globals) *cobra.Command {
-	var out string
+	var out, sections string
+	var teamID int
 	cmd := &cobra.Command{Use: "report", Short: "Workspace reports"}
 	pdf := &cobra.Command{
 		Use:   "pdf",
@@ -20,7 +22,11 @@ func NewReport(g *cli.Globals) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			body, _, err := c.GetRaw(context.Background(), "/report/export/pdf", nil)
+			q := map[string]string{"included_sections": sections}
+			if teamID > 0 {
+				q["team_id"] = strconv.Itoa(teamID)
+			}
+			body, _, err := c.GetRaw(context.Background(), "/report/export/pdf", q)
 			if err != nil {
 				return err
 			}
@@ -32,6 +38,9 @@ func NewReport(g *cli.Globals) *cobra.Command {
 		},
 	}
 	pdf.Flags().StringVar(&out, "out", "", "write PDF to this path instead of stdout")
+	pdf.Flags().StringVar(&sections, "sections", "", "comma-separated sections to include (required)")
+	pdf.Flags().IntVar(&teamID, "team", 0, "filter report by team ID")
+	_ = pdf.MarkFlagRequired("sections")
 	cmd.AddCommand(pdf)
 	return cmd
 }

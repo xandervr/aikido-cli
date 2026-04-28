@@ -46,7 +46,6 @@ const resourceTypes: Fig.Suggestion[] = [
   { name: "repo" },
   { name: "container" },
   { name: "cloud" },
-  { name: "vm" },
   { name: "app" },
   { name: "domain" },
 ];
@@ -101,6 +100,27 @@ const pageOptions: Fig.Option[] = [
 ];
 
 const idArg: Fig.Arg = { name: "id" };
+
+const changelogOptions: Fig.Option[] = [
+  {
+    name: "--from",
+    description: "Current package version",
+    args: { name: "version" },
+    isRequired: true,
+  },
+  {
+    name: "--to",
+    description: "Target package version",
+    args: { name: "version" },
+    isRequired: true,
+  },
+  {
+    name: "--language",
+    description: "Package language",
+    args: { name: "language", suggestions: ["JS", "PY", "GO", ".NET", "Java", "Scala", "Kotlin"] },
+    isRequired: true,
+  },
+];
 
 const completion: Fig.Spec = {
   name: "aikido",
@@ -292,7 +312,18 @@ const completion: Fig.Spec = {
       subcommands: [
         { name: "list", description: "List container repositories" },
         { name: "get", description: "Get a container repo", args: idArg },
-        { name: "sbom", description: "Export the SBOM for a container", args: idArg },
+        {
+          name: "sbom",
+          description: "Export the SBOM for a container",
+          args: idArg,
+          options: [
+            {
+              name: "--format",
+              description: "Output format passthrough",
+              args: { name: "format" },
+            },
+          ],
+        },
       ],
     },
 
@@ -317,7 +348,18 @@ const completion: Fig.Spec = {
       description: "Virtual machines",
       subcommands: [
         { name: "list", description: "List virtual machines" },
-        { name: "sbom", description: "Export the SBOM for a virtual machine", args: idArg },
+        {
+          name: "sbom",
+          description: "Export the SBOM for a virtual machine",
+          args: idArg,
+          options: [
+            {
+              name: "--format",
+              description: "Export format",
+              args: { name: "format", suggestions: ["sbom", "sbom_spdx", "csv"] },
+            },
+          ],
+        },
       ],
     },
     {
@@ -338,7 +380,7 @@ const completion: Fig.Spec = {
       options: [
         { name: "--from", description: "ISO date (inclusive)", args: { name: "date" } },
         { name: "--to", description: "ISO date (inclusive)", args: { name: "date" } },
-        { name: "--user", description: "Filter by user_id", args: { name: "id" } },
+        { name: "--user", description: "Filter by user type", args: { name: "type" } },
       ],
     },
     {
@@ -385,7 +427,12 @@ const completion: Fig.Spec = {
       description: "Task tracker integrations",
       subcommands: [
         { name: "projects", description: "List task tracking projects" },
-        { name: "list", description: "List tasks in a project", args: { name: "project-id" } },
+        {
+          name: "list",
+          description: "List tasks in a project",
+          args: { name: "project-id" },
+          options: [{ name: "--search", description: "Search tasks", args: { name: "query" } }],
+        },
       ],
     },
 
@@ -395,12 +442,22 @@ const completion: Fig.Spec = {
       description: "Vulnerability research lookups",
       subcommands: [
         { name: "cve", description: "Get CVE details", args: { name: "cve-id" } },
-        { name: "changelog", description: "Package changelog summary", args: { name: "package" } },
+        {
+          name: "changelog",
+          description: "Package changelog summary",
+          args: { name: "package" },
+          options: changelogOptions,
+        },
         { name: "malware-packages", description: "Recently flagged malware packages" },
       ],
     },
     { name: "cve", description: "CVE details (shortcut)", args: { name: "cve-id" } },
-    { name: "changelog", description: "Package changelog (shortcut)", args: { name: "package" } },
+    {
+      name: "changelog",
+      description: "Package changelog (shortcut)",
+      args: { name: "package" },
+      options: changelogOptions,
+    },
     { name: "malware-packages", description: "Malware packages (shortcut)" },
 
     // ─── report ──────────────────────────────────────────────────────────
@@ -416,6 +473,17 @@ const completion: Fig.Spec = {
               name: "--out",
               description: "Write to file instead of stdout",
               args: { name: "path", template: "filepaths" },
+            },
+            {
+              name: "--sections",
+              description: "Comma-separated report sections",
+              args: { name: "sections" },
+              isRequired: true,
+            },
+            {
+              name: "--team",
+              description: "Filter report by team ID",
+              args: { name: "id" },
             },
           ],
         },

@@ -58,7 +58,7 @@ func runReposList(ctx context.Context, c *client.Client, r *output.Renderer, opt
 		q["team_id"] = fmt.Sprintf("%d", opts.Team)
 	}
 	if opts.Search != "" {
-		q["filter_search"] = opts.Search
+		q["filter_name"] = opts.Search
 	}
 	if opts.Page > 0 {
 		q["page"] = fmt.Sprintf("%d", opts.Page)
@@ -107,7 +107,7 @@ func reposSBOM(g *cli.Globals) *cobra.Command {
 			if format != "" {
 				q["format"] = format
 			}
-			body, _, err := c.GetRaw(cmd.Context(), "/repositories/code/"+args[0]+"/licenses", q)
+			body, _, err := c.GetRaw(cmd.Context(), "/repositories/code/"+args[0]+"/licenses/export", q)
 			if err != nil {
 				return err
 			}

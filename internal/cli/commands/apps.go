@@ -7,6 +7,6 @@ import (
 
 func NewApps(g *cli.Globals) *cobra.Command {
 	cmd := &cobra.Command{Use: "apps", Short: "Zen apps"}
-	cmd.AddCommand(simpleList(g, "list", "List Zen apps", "/apps"))
+	cmd.AddCommand(simpleList(g, "list", "List Zen apps", "/firewall/apps"))
 	return cmd
 }

@@ -3,6 +3,7 @@ package commands
 import (
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/spf13/cobra"
 	"github.com/xandervr/aikido-cli/internal/cli"
@@ -136,19 +137,19 @@ func teamsDelete(g *cli.Globals) *cobra.Command {
 func teamsLink(g *cli.Globals) *cobra.Command {
 	return &cobra.Command{
 		Use:   "link <team-id> <resource-type> <resource-id>",
-		Short: "Link a resource (repo|container|cloud|vm|app|domain) to a team",
+		Short: "Link a resource (repo|container|cloud|app|domain) to a team",
 		Args:  cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := g.Client()
 			if err != nil {
 				return err
 			}
-			body := map[string]any{
-				"resource_type": args[1],
-				"resource_id":   args[2],
+			body, err := teamResourceBody(args[1], args[2])
+			if err != nil {
+				return &cli.ExitError{Code: cli.ExitUsage, Err: err}
 			}
 			var resp any
-			if err := c.Post(cmd.Context(), "/teams/"+args[0]+"/resources", body, &resp); err != nil {
+			if err := c.Post(cmd.Context(), "/teams/"+args[0]+"/linkResource", body, &resp); err != nil {
 				return err
 			}
 			return g.Renderer().Render(resp)
@@ -166,12 +167,16 @@ func teamsUnlink(g *cli.Globals) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			path := fmt.Sprintf("/teams/%s/resources/%s/%s", args[0], args[1], args[2])
-			if err := c.Delete(cmd.Context(), path, nil); err != nil {
+			body, err := teamResourceBody(args[1], args[2])
+			if err != nil {
+				return &cli.ExitError{Code: cli.ExitUsage, Err: err}
+			}
+			var resp any
+			path := fmt.Sprintf("/teams/%s/unlinkResource", args[0])
+			if err := c.Post(cmd.Context(), path, body, &resp); err != nil {
 				return err
 			}
-			fmt.Fprintln(g.Renderer().Out, `{"unlinked":true}`)
-			return nil
+			return g.Renderer().Render(resp)
 		},
 	}
 }
@@ -190,14 +195,39 @@ func teamsRemoveUser(g *cli.Globals) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			path := fmt.Sprintf("/teams/%s/users/%s", args[0], args[1])
-			if err := c.Delete(cmd.Context(), path, nil); err != nil {
+			userID, err := strconv.Atoi(args[1])
+			if err != nil {
+				return &cli.ExitError{Code: cli.ExitUsage, Err: fmt.Errorf("user-id must be an integer: %w", err)}
+			}
+			var resp any
+			path := fmt.Sprintf("/teams/%s/removeUser", args[0])
+			if err := c.Post(cmd.Context(), path, map[string]any{"user_id": userID}, &resp); err != nil {
 				return err
 			}
-			fmt.Fprintln(g.Renderer().Out, `{"removed":true}`)
-			return nil
+			return g.Renderer().Render(resp)
 		},
 	}
 	cmd.Flags().BoolVar(&confirm, "confirm", false, "required for destructive operation")
 	return cmd
+}
+
+func teamResourceBody(resourceType, resourceID string) (map[string]any, error) {
+	fieldByType := map[string]string{
+		"repo":      "repo_id",
+		"cloud":     "cloud_id",
+		"container": "image_id",
+		"image":     "image_id",
+		"domain":    "domain_id",
+		"app":       "zen_app_id",
+		"zen-app":   "zen_app_id",
+	}
+	field, ok := fieldByType[resourceType]
+	if !ok {
+		return nil, fmt.Errorf("unsupported resource type %q", resourceType)
+	}
+	id, err := strconv.Atoi(resourceID)
+	if err != nil {
+		return nil, fmt.Errorf("resource-id must be an integer: %w", err)
+	}
+	return map[string]any{field: id}, nil
 }

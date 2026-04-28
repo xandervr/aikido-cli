@@ -69,7 +69,7 @@ per user instruction. Module path: `github.com/xandervr/aikido-cli`.
 
 ## Task 13 — Bulk read group B
 
-- [ ] `internal/cli/commands/{webhooks,activity,pr_checks,compliance,custom_rules,pentest,tasks,research,report}.go`. Activity has `--from --to --user`; PR-checks `--repo`; report `pdf --out <path>`.
+- [ ] `internal/cli/commands/{webhooks,activity,pr_checks,compliance,custom_rules,pentest,tasks,research,report}.go`. Activity has `--from --to --user`; PR-checks `--repo`; report `pdf --sections <sections> --out <path>`.
 
 ## Task 14 — Wire everything in main + smoke test
 

@@ -11,15 +11,16 @@ import (
 func NewContainers(g *cli.Globals) *cobra.Command {
 	cmd := &cobra.Command{Use: "containers", Short: "Container repositories"}
 	cmd.AddCommand(
-		simpleList(g, "list", "List container repositories", "/repositories/container"),
-		simpleGet(g, "get <id>", "Get a container repo", "/repositories/container"),
+		simpleList(g, "list", "List container repositories", "/containers"),
+		simpleGet(g, "get <id>", "Get a container repo", "/containers"),
 		containersSBOM(g),
 	)
 	return cmd
 }
 
 func containersSBOM(g *cli.Globals) *cobra.Command {
-	return &cobra.Command{
+	var format string
+	cmd := &cobra.Command{
 		Use:   "sbom <id>",
 		Short: "Export the SBOM for a container",
 		Args:  cobra.ExactArgs(1),
@@ -28,7 +29,11 @@ func containersSBOM(g *cli.Globals) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			body, _, err := c.GetRaw(context.Background(), "/repositories/container/"+args[0]+"/licenses", nil)
+			q := map[string]string{}
+			if format != "" {
+				q["format"] = format
+			}
+			body, _, err := c.GetRaw(context.Background(), "/containers/"+args[0]+"/licenses/export", q)
 			if err != nil {
 				return err
 			}
@@ -36,4 +41,6 @@ func containersSBOM(g *cli.Globals) *cobra.Command {
 			return nil
 		},
 	}
+	cmd.Flags().StringVar(&format, "format", "", "format passthrough")
+	return cmd
 }

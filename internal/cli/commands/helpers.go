@@ -23,7 +23,7 @@ func simpleList(g *cli.Globals, use, short, path string) *cobra.Command {
 	}
 }
 
-func simpleGet(g *cli.Globals, use, short, basePath string) *cobra.Command {
+func simpleGet(g *cli.Globals, use, short, basePath string, suffix ...string) *cobra.Command {
 	return &cobra.Command{
 		Use:   use,
 		Short: short,
@@ -34,7 +34,11 @@ func simpleGet(g *cli.Globals, use, short, basePath string) *cobra.Command {
 				return err
 			}
 			var raw any
-			if err := c.Get(cmd.Context(), basePath+"/"+args[0], nil, &raw); err != nil {
+			path := basePath + "/" + args[0]
+			for _, part := range suffix {
+				path += "/" + part
+			}
+			if err := c.Get(cmd.Context(), path, nil, &raw); err != nil {
 				return err
 			}
 			return g.Renderer().Render(raw)

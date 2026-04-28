@@ -133,7 +133,7 @@ aikido auth status                # masked key, region (from JWT), workspace nam
 
 aikido workspace info             # GET /workspace
 aikido workspace config-errors    # GET /workspace/configuration-errors
-aikido workspace introspect       # GET /workspace/openapispec — dumps OpenAPI doc
+aikido workspace introspect       # GET /openapi/spec — dumps OpenAPI doc
 
 aikido repos list                 # --team --search --page --per-page
 aikido repos get <id>
@@ -156,7 +156,7 @@ aikido clouds assets              # POST /clouds/assets — read-style despite v
 aikido apps list                  # Zen
 
 aikido vms list
-aikido vms sbom <id>
+aikido vms sbom <id>              # --format sbom|sbom_spdx|csv
 
 aikido licenses list
 
@@ -179,10 +179,10 @@ aikido tasks projects
 aikido tasks list <project-id>
 
 aikido cve <cve-id>
-aikido changelog <package>
+aikido changelog <package>        # --from --to --language required
 aikido malware-packages
 
-aikido report pdf                 # writes binary; --out path or stdout
+aikido report pdf                 # --sections required; --out path or stdout
 ```
 
 ### 4.2 Team management (writes)
@@ -195,7 +195,7 @@ aikido teams update <id> --name <name>          # v1 supports --name only;
                                                 # confirmed via introspect
 aikido teams delete <id>                        # --confirm required
 aikido teams link <team-id> <resource-type> <resource-id>
-                                                # resource-type: repo|container|cloud|vm|app|domain
+                                                # resource-type: repo|container|cloud|app|domain
 aikido teams unlink <team-id> <resource-type> <resource-id>
 aikido teams remove-user <team-id> <user-id>    # --confirm required
 ```
@@ -349,7 +349,7 @@ These are explicitly out of v1 scope. Listed so we don't lose them:
 - **Cloud connection** — `POST /clouds/aws`, GCP, Azure variants.
 - **App/container deletion** — destructive, defer until requested.
 - **User-rights changes** — `PUT /users/{id}/rights`.
-- **Custom rule creation** — `POST /custom-rules`.
+- **Custom rule creation** — `POST /repositories/sast/custom-rules`.
 - **Domain CRUD + scan triggers** — `POST /domains`, `POST /domains/{id}/scan`.
 - **Multi-profile support** — `--profile work` switching keychain entries.
 - **Shell completions** — `aikido completion bash|zsh|fish`.
