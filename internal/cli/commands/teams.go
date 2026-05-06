@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -10,10 +11,51 @@ import (
 )
 
 type Team struct {
-	ID         int    `json:"id"          aikido:"column,header=ID"`
-	Name       string `json:"name"        aikido:"column,header=Name"`
-	IsImported bool   `json:"is_imported" aikido:"column,header=Imported"`
-	UserCount  int    `json:"user_count"  aikido:"column,header=Users"`
+	ID     int64  `aikido:"column,header=ID"`
+	Name   string `aikido:"column,header=Name"`
+	Source string `aikido:"column,header=Source"`
+	Active string `aikido:"column,header=Active"`
+
+	raw json.RawMessage
+}
+
+func (t *Team) UnmarshalJSON(b []byte) error {
+	t.raw = append(t.raw[:0], b...)
+	var m map[string]any
+	if err := json.Unmarshal(b, &m); err != nil {
+		return err
+	}
+	t.ID = pickInt(m, "id", "team_id")
+	t.Name = pickStr(m, "name", "team_name")
+	t.Source = pickStr(m, "external_source", "source")
+	if t.Source == "" {
+		if imported, ok := m["is_imported"].(bool); ok && imported {
+			t.Source = "imported"
+		}
+	}
+	if active, ok := m["active"].(bool); ok {
+		t.Active = strconv.FormatBool(active)
+	}
+	return nil
+}
+
+func (t Team) MarshalJSON() ([]byte, error) {
+	if len(t.raw) > 0 {
+		return t.raw, nil
+	}
+	m := map[string]any{
+		"id":   t.ID,
+		"name": t.Name,
+	}
+	if t.Source != "" {
+		m["external_source"] = t.Source
+	}
+	if t.Active != "" {
+		if active, err := strconv.ParseBool(t.Active); err == nil {
+			m["active"] = active
+		}
+	}
+	return json.Marshal(m)
 }
 
 func NewTeams(g *cli.Globals) *cobra.Command {
