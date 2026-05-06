@@ -31,6 +31,7 @@ func main() {
 		commands.NewChangelog(g),
 		commands.NewMalwarePackages(g),
 		commands.NewReport(g),
+		commands.NewVersion(g),
 	)
 	if err := root.Execute(); err != nil {
 		cli.Exit(err)

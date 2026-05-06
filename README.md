@@ -43,6 +43,22 @@ exec zsh -l
 After that, `aikido <TAB>`, `aikido issues list --<TAB>` etc. complete
 subcommands and flags.
 
+## Version
+
+```bash
+aikido version          # aikido version <version>
+aikido version --json   # includes version, commit, and build date
+aikido --version        # Cobra's built-in version flag
+```
+
+`make build` injects version metadata from git: `VERSION` defaults to
+`git describe --tags --always --dirty`, `COMMIT` to the short commit SHA, and
+`DATE` to the UTC build time. Override any of them when packaging:
+
+```bash
+make build VERSION=v1.2.3 COMMIT=abc123 DATE=2026-05-06T08:00:00Z
+```
+
 ## Authenticate
 
 The Aikido public REST API uses OAuth2 with the **client_credentials** grant.
@@ -156,6 +172,7 @@ caches the token.
 | research      | cve, changelog, malware-packages                         |
 | cve, changelog, malware-packages | top-level shortcuts                   |
 | report        | pdf                                                      |
+| version       | (top-level)                                              |
 
 `changelog <package>` requires `--from`, `--to`, and `--language`. `report pdf`
 requires `--sections` (comma-separated Aikido report sections) and accepts
@@ -176,6 +193,7 @@ endpoints not yet wired into a subcommand.
 | --table          | Force table output                                  |
 | --no-color       | Disable ANSI colors                                 |
 | --debug          | Log HTTP requests/responses to stderr               |
+| --version        | Show CLI version                                    |
 | --base-url       | Override API base URL                               |
 | --client-id      | OAuth client ID                                     |
 | --client-secret  | OAuth client secret                                 |
