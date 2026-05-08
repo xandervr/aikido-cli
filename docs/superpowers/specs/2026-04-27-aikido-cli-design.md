@@ -4,6 +4,10 @@
 **Status:** Approved (pending user review of this document)
 **Owner:** xander
 
+> Current endpoint coverage and drift rules are tracked in
+> `docs/superpowers/specs/2026-05-06-aikido-cli-api-compliance.md`. This file is
+> the original v1 design and contains some intentionally superseded scope notes.
+
 ## 1. Purpose
 
 Build a single-binary CLI named `aikido` that exposes the Aikido Security

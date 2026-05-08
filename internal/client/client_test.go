@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -65,6 +66,36 @@ func TestClient_Get_AppendsQueryParams(t *testing.T) {
 	var out []any
 	if err := c.Get(context.Background(), "/x", map[string]string{"severity": "high"}, &out); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestClient_Raw_SendsArbitraryMethodQueryAndBody(t *testing.T) {
+	var gotMethod, gotPath, gotQuery, gotBody string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod = r.Method
+		gotPath = r.URL.Path
+		gotQuery = r.URL.RawQuery
+		body, _ := io.ReadAll(r.Body)
+		gotBody = string(body)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	defer srv.Close()
+
+	c := New(Config{BaseURL: srv.URL, APIKey: "k"})
+	body := map[string]any{"name": "Example"}
+	resp, contentType, err := c.Raw(context.Background(), http.MethodPut, "/domains/1/headers", map[string]string{"dry_run": "true"}, body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(resp) != `{"ok":true}` || contentType != "application/json" {
+		t.Fatalf("bad raw response: %q %q", string(resp), contentType)
+	}
+	if gotMethod != "PUT" || gotPath != "/domains/1/headers" || gotQuery != "dry_run=true" {
+		t.Fatalf("bad request target: %s %s?%s", gotMethod, gotPath, gotQuery)
+	}
+	if gotBody != `{"name":"Example"}` {
+		t.Fatalf("bad body: %q", gotBody)
 	}
 }
 

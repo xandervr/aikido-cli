@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/spf13/cobra"
 	"github.com/xandervr/aikido-cli/internal/cli"
@@ -12,6 +13,9 @@ func NewTasks(g *cli.Globals) *cobra.Command {
 	cmd.AddCommand(
 		simpleList(g, "projects", "List task tracking projects", "/task_tracking/projects"),
 		tasksList(g),
+		endpointCommand(g, endpointCommandConfig{Use: "project-mapping", Short: "Get project mapping", Method: http.MethodGet, Path: staticPath("/task_tracking/projectMapping")}),
+		endpointCommand(g, endpointCommandConfig{Use: "map-repos", Short: "Map code repos to task tracking projects", Method: http.MethodPost, Path: staticPath("/task_tracking/mapCodeReposToProjects")}),
+		endpointCommand(g, endpointCommandConfig{Use: "link-task", Short: "Link existing task to issue", Method: http.MethodPost, Path: staticPath("/task_tracking/linkTaskToIssueGroup")}),
 	)
 	return cmd
 }

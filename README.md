@@ -152,27 +152,48 @@ caches the token.
 | Group         | Subcommands                                              |
 |---------------|----------------------------------------------------------|
 | auth          | login, logout, status, refresh                           |
+| api           | endpoints, get, post, put, delete                        |
 | workspace     | info, config-errors, introspect                          |
-| repos         | list, get, sbom                                          |
-| issues        | list, get, export                                        |
-| teams         | list, create, update, delete, link, unlink, remove-user  |
-| users         | list, get                                                |
-| containers    | list, get, sbom                                          |
-| clouds        | list, assets                                             |
-| apps          | list                                                     |
+| repos         | list, get, sbom, scan, activate/deactivate, rules, more  |
+| issues        | list, get, export, counts, issue, reachability, actions  |
+| teams         | list, create, update, delete, link, unlink, add/remove-user |
+| users         | list, get, rights                                        |
+| containers    | list, get, sbom, raw-sbom, scan, registries, more        |
+| clouds        | list, assets, rules, aws/azure/gcp/kubernetes, delete    |
+| domains       | list, create, delete, scan, headers, subdomains          |
+| apps          | list, create, get, update, delete, blocklists, events    |
 | vms           | list, sbom                                               |
-| licenses      | list                                                     |
-| webhooks      | list                                                     |
+| licenses      | list, overwrite                                          |
+| webhooks      | list, add, delete                                        |
 | activity      | (top-level — `--from --to --user`)                       |
 | pr-checks     | list                                                     |
-| compliance    | soc2, nis2, iso27001                                     |
-| custom-rules  | list, get                                                |
-| pentest       | get, attack                                              |
-| tasks         | projects, list                                           |
+| compliance    | soc2, nis2, iso27001, cis, cis-aws                       |
+| custom-rules  | list, create, get, update, delete                        |
+| pentest       | get, create-draft, attack                                |
+| tasks         | projects, list, project-mapping, map-repos, link-task    |
+| local-scan    | latest                                                   |
+| endpoint-protection | activity-logs                                      |
+| code-quality  | findings                                                 |
+| access-tokens | code-scanning                                            |
+| bug-bounty    | validate-report                                          |
 | research      | cve, changelog, malware-packages                         |
 | cve, changelog, malware-packages | top-level shortcuts                   |
 | report        | pdf                                                      |
 | version       | (top-level)                                              |
+
+`api endpoints` lists the current checked-in Aikido OpenAPI operation catalog
+(143 operations from the docs snapshot used for this release). `api get|post|put|delete
+<path>` is the full-coverage escape hatch for every public REST endpoint:
+
+```bash
+aikido api endpoints --search domains
+aikido api get /domains --query page=0 --query per_page=20
+aikido api post /domains --body '{"url":"https://example.com"}'
+aikido api put /domains/42/headers --body-file headers.json
+```
+
+Named mutating commands that accept variable request bodies use the same
+`--query key=value`, `--body JSON`, `--body-file path`, and `--out path` flags.
 
 `changelog <package>` requires `--from`, `--to`, and `--language`. `report pdf`
 requires `--sections` (comma-separated Aikido report sections) and accepts
@@ -182,8 +203,12 @@ needed.
 `teams link` / `teams unlink` support `repo`, `container`, `cloud`, `app`, and
 `domain` resource types.
 
-`workspace introspect` dumps the live OpenAPI spec — useful for spotting
-endpoints not yet wired into a subcommand.
+`activity --from` and `--to` accept Unix timestamps, RFC3339 timestamps, or
+`YYYY-MM-DD` dates. Date-only values are converted to the integer timestamps
+documented by Aikido.
+
+`workspace introspect` dumps the live OpenAPI spec — useful for checking
+whether Aikido has changed since the checked-in endpoint catalog was updated.
 
 ## Global flags
 
@@ -218,9 +243,8 @@ endpoints not yet wired into a subcommand.
 
 ## Destructive operations
 
-`aikido teams delete` and `aikido teams remove-user` require an explicit
-`--confirm` flag. Without it the command exits with code 3 and changes
-nothing.
+Documented delete commands and `aikido teams remove-user` require an explicit
+`--confirm` flag. Without it the command exits with code 3 and changes nothing.
 
 ## Development
 

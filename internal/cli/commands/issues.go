@@ -3,6 +3,7 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -144,7 +145,27 @@ type issuesListOpts struct {
 
 func NewIssues(g *cli.Globals) *cobra.Command {
 	cmd := &cobra.Command{Use: "issues", Short: "Open issues / vulnerabilities"}
-	cmd.AddCommand(issuesList(g), issuesGet(g), issuesExport(g))
+	cmd.AddCommand(
+		issuesList(g),
+		issuesGet(g),
+		issuesExport(g),
+		endpointCommand(g, endpointCommandConfig{Use: "counts", Short: "Get issue counts", Method: http.MethodGet, Path: staticPath("/issues/counts")}),
+		endpointCommand(g, endpointCommandConfig{Use: "bulk-detail", Short: "Get issue details in bulk", Method: http.MethodGet, Path: staticPath("/issues/detail/bulk")}),
+		endpointCommand(g, endpointCommandConfig{Use: "issue <issue-id>", Short: "Get issue detail", Method: http.MethodGet, Args: cobra.ExactArgs(1), Path: oneArgPath("/issues/%s")}),
+		endpointCommand(g, endpointCommandConfig{Use: "reachability <issue-id>", Short: "Get issue reachability", Method: http.MethodGet, Args: cobra.ExactArgs(1), Path: oneArgPath("/issues/%s/reachability")}),
+		endpointCommand(g, endpointCommandConfig{Use: "tasks <group-id>", Short: "Get issue group tasks", Method: http.MethodGet, Args: cobra.ExactArgs(1), Path: oneArgPath("/issues/groups/%s/tasks")}),
+		endpointCommand(g, endpointCommandConfig{Use: "snooze <issue-id>", Short: "Snooze an issue", Method: http.MethodPut, Args: cobra.ExactArgs(1), Path: oneArgPath("/issues/%s/snooze")}),
+		endpointCommand(g, endpointCommandConfig{Use: "unsnooze <issue-id>", Short: "Unsnooze an issue", Method: http.MethodPut, Args: cobra.ExactArgs(1), Path: oneArgPath("/issues/%s/unsnooze")}),
+		endpointCommand(g, endpointCommandConfig{Use: "ignore <issue-id>", Short: "Ignore an issue", Method: http.MethodPut, Args: cobra.ExactArgs(1), Path: oneArgPath("/issues/%s/ignore")}),
+		endpointCommand(g, endpointCommandConfig{Use: "unignore <issue-id>", Short: "Unignore an issue", Method: http.MethodPut, Args: cobra.ExactArgs(1), Path: oneArgPath("/issues/%s/unignore")}),
+		endpointCommand(g, endpointCommandConfig{Use: "adjust-severity <issue-id>", Short: "Adjust issue severity", Method: http.MethodPost, Args: cobra.ExactArgs(1), Path: oneArgPath("/issues/%s/severity/adjust")}),
+		endpointCommand(g, endpointCommandConfig{Use: "group-snooze <group-id>", Short: "Snooze an issue group", Method: http.MethodPut, Args: cobra.ExactArgs(1), Path: oneArgPath("/issues/groups/%s/snooze")}),
+		endpointCommand(g, endpointCommandConfig{Use: "group-unsnooze <group-id>", Short: "Unsnooze an issue group", Method: http.MethodPut, Args: cobra.ExactArgs(1), Path: oneArgPath("/issues/groups/%s/unsnooze")}),
+		endpointCommand(g, endpointCommandConfig{Use: "group-ignore <group-id>", Short: "Ignore an issue group", Method: http.MethodPut, Args: cobra.ExactArgs(1), Path: oneArgPath("/issues/groups/%s/ignore")}),
+		endpointCommand(g, endpointCommandConfig{Use: "group-unignore <group-id>", Short: "Unignore an issue group", Method: http.MethodPut, Args: cobra.ExactArgs(1), Path: oneArgPath("/issues/groups/%s/unignore")}),
+		endpointCommand(g, endpointCommandConfig{Use: "group-adjust-severity <group-id>", Short: "Adjust issue group severity", Method: http.MethodPost, Args: cobra.ExactArgs(1), Path: oneArgPath("/issues/groups/%s/severity/adjust")}),
+		endpointCommand(g, endpointCommandConfig{Use: "note <group-id>", Short: "Add note to issue group", Method: http.MethodPost, Args: cobra.ExactArgs(1), Path: oneArgPath("/issues/groups/%s/notes")}),
+	)
 	return cmd
 }
 
@@ -159,9 +180,6 @@ func issuesList(g *cli.Globals) *cobra.Command {
 				return err
 			}
 			q := map[string]string{}
-			if opts.Severity != "" {
-				q["filter_severity"] = opts.Severity
-			}
 			if opts.Type != "" {
 				q["filter_issue_type"] = opts.Type
 			}
@@ -181,9 +199,19 @@ func issuesList(g *cli.Globals) *cobra.Command {
 			if err := c.Get(cmd.Context(), "/open-issue-groups", q, &groups); err != nil {
 				return err
 			}
-			// The Aikido API does not support filter_status server-side
-			// (only severity, type, repo, team). Filter client-side so the
-			// flag has the effect users expect.
+			// The Aikido API no longer documents severity or status filters
+			// for /open-issue-groups. Keep the CLI flags useful without
+			// sending undocumented query params.
+			if opts.Severity != "" {
+				want := strings.ToLower(opts.Severity)
+				kept := groups[:0]
+				for _, gr := range groups {
+					if strings.ToLower(gr.Severity) == want {
+						kept = append(kept, gr)
+					}
+				}
+				groups = kept
+			}
 			if opts.Status != "" {
 				want := strings.ToLower(opts.Status)
 				kept := groups[:0]
@@ -197,8 +225,8 @@ func issuesList(g *cli.Globals) *cobra.Command {
 			return g.Renderer().Render(groups)
 		},
 	}
-	cmd.Flags().StringVar(&opts.Severity, "severity", "", "filter: critical|high|medium|low")
-	cmd.Flags().StringVar(&opts.Status, "status", "", "filter (CLIENT-side; API has no status filter): task_open|task_in_progress|task_closed|task_done|todo|new|ignored|snoozed")
+	cmd.Flags().StringVar(&opts.Severity, "severity", "", "filter client-side: critical|high|medium|low")
+	cmd.Flags().StringVar(&opts.Status, "status", "", "filter client-side: task_open|task_in_progress|task_closed|task_done|todo|new|ignored|snoozed")
 	cmd.Flags().StringVar(&opts.Type, "type", "", "filter: open_source|leaked_secret|sast|iac|cloud|docker_container|cloud_instance|surface_monitoring|malware|eol|mobile|scm_security|ai_pentest|license")
 	cmd.Flags().IntVar(&opts.Repo, "repo", 0, "filter by code repo ID")
 	cmd.Flags().IntVar(&opts.Team, "team", 0, "filter by team ID")

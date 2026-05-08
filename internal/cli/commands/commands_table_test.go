@@ -31,7 +31,7 @@ func TestSimpleListCommands_HitExpectedPath(t *testing.T) {
 
 	cases := []commandCase{
 		cmdCase("workspace info", NewWorkspace, []string{"info"}, "/workspace", "GET"),
-		cmdCase("workspace config-errors", NewWorkspace, []string{"config-errors"}, "/workspace/configuration-errors", "GET"),
+		cmdCase("workspace config-errors", NewWorkspace, []string{"config-errors"}, "/workspace/configurationErrors", "GET"),
 		cmdCase("workspace introspect", NewWorkspace, []string{"introspect"}, "/openapi/spec", "GET"),
 		cmdCase("users list", NewUsers, []string{"list"}, "/users", "GET"),
 		cmdCase("users get", NewUsers, []string{"get", "42"}, "/users/42", "GET"),
@@ -64,17 +64,26 @@ func TestSimpleListCommands_HitExpectedPath(t *testing.T) {
 		cmdCase("malware-packages shortcut", NewMalwarePackages, []string{}, "/research/malware/packages", "GET"),
 		cmdCase("repos list", NewRepos, []string{"list"}, "/repositories/code", "GET"),
 		cmdCaseWithQuery("repos list search", NewRepos, []string{"list", "--search", "api"}, "/repositories/code", "GET", "filter_name=api"),
+		cmdCase("repos list team", NewRepos, []string{"list", "--team", "3"}, "/repositories/code", "GET"),
 		cmdCase("repos get", NewRepos, []string{"get", "3"}, "/repositories/code/3", "GET"),
 		cmdCase("repos sbom", NewRepos, []string{"sbom", "3"}, "/repositories/code/3/licenses/export", "GET"),
 		cmdCase("issues list", NewIssues, []string{"list"}, "/open-issue-groups", "GET"),
+		cmdCase("issues list severity", NewIssues, []string{"list", "--severity", "high"}, "/open-issue-groups", "GET"),
 		cmdCase("issues get", NewIssues, []string{"get", "11"}, "/issues/groups/11", "GET"),
 		cmdCase("teams list", NewTeams, []string{"list"}, "/teams", "GET"),
 		cmdCase("teams link", NewTeams, []string{"link", "4", "repo", "9"}, "/teams/4/linkResource", "POST"),
 		cmdCase("teams unlink", NewTeams, []string{"unlink", "4", "repo", "9"}, "/teams/4/unlinkResource", "POST"),
 		cmdCase("teams remove-user", NewTeams, []string{"remove-user", "4", "7", "--confirm"}, "/teams/4/removeUser", "POST"),
 		cmdCase("activity top-level", NewActivity, []string{}, "/report/activityLog", "GET"),
-		cmdCaseWithQuery("activity dates", NewActivity, []string{"--from", "2026-01-01", "--to", "2026-01-31"}, "/report/activityLog", "GET", "end=2026-01-31&start=2026-01-01"),
+		cmdCaseWithQuery("activity dates", NewActivity, []string{"--from", "2026-01-01", "--to", "2026-01-31"}, "/report/activityLog", "GET", "end=1769903999&start=1767225600"),
 		cmdCaseWithQuery("report pdf", NewReport, []string{"pdf", "--sections", "soc2"}, "/report/export/pdf", "GET", "included_sections=soc2"),
+		cmdCase("domains list", NewDomains, []string{"list"}, "/domains", "GET"),
+		cmdCase("local-scan latest", NewLocalScan, []string{"latest"}, "/localscan/latest", "GET"),
+		cmdCase("endpoint-protection activity-logs", NewEndpointProtection, []string{"activity-logs"}, "/endpoint-protection/activityLogs", "GET"),
+		cmdCase("code-quality findings", NewCodeQuality, []string{"findings"}, "/code-quality/findings", "GET"),
+		cmdCase("access-tokens code-scanning", NewAccessTokens, []string{"code-scanning"}, "/access-tokens/code-scanning", "POST"),
+		cmdCase("bug-bounty validate-report", NewBugBounty, []string{"validate-report", "42"}, "/bug_bounty/program/42/report", "POST"),
+		cmdCaseWithQuery("api get", NewAPI, []string{"get", "/domains", "--query", "page=1", "--query", "per_page=20"}, "/domains", "GET", "page=1&per_page=20"),
 	}
 
 	for _, tc := range cases {
@@ -113,6 +122,60 @@ func TestSimpleListCommands_HitExpectedPath(t *testing.T) {
 				t.Errorf("query = %q, want %q", gotQuery, tc.wantQuery)
 			}
 		})
+	}
+}
+
+func TestAPIPost_SendsDocumentedBody(t *testing.T) {
+	var gotMethod, gotPath, gotBody string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod = r.Method
+		gotPath = r.URL.Path
+		body, _ := io.ReadAll(r.Body)
+		gotBody = string(body)
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	defer srv.Close()
+	t.Setenv("AIKIDO_ACCESS_TOKEN", "k")
+	t.Setenv("AIKIDO_BASE_URL", srv.URL)
+
+	root, g := cli.NewRoot()
+	root.AddCommand(NewAPI(g))
+	root.SetArgs([]string{"api", "post", "/domains", "--body", `{"url":"https://example.com"}`, "--json"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if gotMethod != "POST" || gotPath != "/domains" {
+		t.Fatalf("expected POST /domains, got %s %s", gotMethod, gotPath)
+	}
+	if gotBody != `{"url":"https://example.com"}` {
+		t.Fatalf("unexpected body: %q", gotBody)
+	}
+}
+
+func TestAPICatalog_CoversCurrentOpenAPISurface(t *testing.T) {
+	if len(documentedEndpoints) != 143 {
+		t.Fatalf("documented endpoint count = %d, want 143", len(documentedEndpoints))
+	}
+	want := map[string]bool{
+		"GET /workspace/configurationErrors":                         false,
+		"GET /domains":                                               false,
+		"GET /localscan/latest":                                      false,
+		"GET /endpoint-protection/activityLogs":                      false,
+		"GET /code-quality/findings":                                 false,
+		"POST /access-tokens/code-scanning":                          false,
+		"POST /bug_bounty/program/{program_id}/report":               false,
+		"GET /virtual-machines/{virtual_machine_id}/export/{format}": false,
+	}
+	for _, ep := range documentedEndpoints {
+		key := ep.Method + " " + ep.Path
+		if _, ok := want[key]; ok {
+			want[key] = true
+		}
+	}
+	for key, seen := range want {
+		if !seen {
+			t.Fatalf("documented endpoint catalog missing %s", key)
+		}
 	}
 }
 

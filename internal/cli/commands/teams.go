@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"strconv"
 
 	"github.com/spf13/cobra"
@@ -67,6 +68,7 @@ func NewTeams(g *cli.Globals) *cobra.Command {
 		teamsDelete(g),
 		teamsLink(g),
 		teamsUnlink(g),
+		teamsAddUser(g),
 		teamsRemoveUser(g),
 	)
 	return cmd
@@ -221,6 +223,16 @@ func teamsUnlink(g *cli.Globals) *cobra.Command {
 			return g.Renderer().Render(resp)
 		},
 	}
+}
+
+func teamsAddUser(g *cli.Globals) *cobra.Command {
+	return endpointCommand(g, endpointCommandConfig{
+		Use:    "add-user <team-id>",
+		Short:  "Add a user to a team",
+		Method: http.MethodPost,
+		Args:   cobra.ExactArgs(1),
+		Path:   oneArgPath("/teams/%s/addUser"),
+	})
 }
 
 func teamsRemoveUser(g *cli.Globals) *cobra.Command {

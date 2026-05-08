@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/spf13/cobra"
 	"github.com/xandervr/aikido-cli/internal/cli"
@@ -28,7 +29,28 @@ type reposListOpts struct {
 
 func NewRepos(g *cli.Globals) *cobra.Command {
 	cmd := &cobra.Command{Use: "repos", Short: "Code repositories"}
-	cmd.AddCommand(reposList(g), reposGet(g), reposSBOM(g))
+	cmd.AddCommand(
+		reposList(g),
+		reposGet(g),
+		reposSBOM(g),
+		endpointCommand(g, endpointCommandConfig{Use: "delete <id>", Short: "Delete code repository", Method: http.MethodDelete, Args: cobra.ExactArgs(1), Path: oneArgPath("/repositories/code/%s"), Confirm: true}),
+		endpointCommand(g, endpointCommandConfig{Use: "scan <id>", Short: "Scan code repository", Method: http.MethodPost, Args: cobra.ExactArgs(1), Path: oneArgPath("/repositories/code/%s/scan")}),
+		endpointCommand(g, endpointCommandConfig{Use: "devdep-scan <id>", Short: "Manage dev dependency scanning", Method: http.MethodPut, Args: cobra.ExactArgs(1), Path: oneArgPath("/repositories/code/%s/devdep-scan")}),
+		endpointCommand(g, endpointCommandConfig{Use: "sensitivity <id>", Short: "Update sensitivity", Method: http.MethodPut, Args: cobra.ExactArgs(1), Path: oneArgPath("/repositories/code/%s/sensitivity")}),
+		endpointCommand(g, endpointCommandConfig{Use: "connectivity <id>", Short: "Update connectivity", Method: http.MethodPut, Args: cobra.ExactArgs(1), Path: oneArgPath("/repositories/code/%s/connectivity")}),
+		endpointCommand(g, endpointCommandConfig{Use: "exclude-path <id>", Short: "Add an exclude path", Method: http.MethodPost, Args: cobra.ExactArgs(1), Path: oneArgPath("/repositories/code/%s/exclude-path")}),
+		endpointCommand(g, endpointCommandConfig{Use: "remove-exclude-path <id>", Short: "Remove an exclude path", Method: http.MethodPost, Args: cobra.ExactArgs(1), Path: oneArgPath("/repositories/code/%s/exclude-path/remove")}),
+		endpointCommand(g, endpointCommandConfig{Use: "team-sbom <team-id>", Short: "Export SBOM for a team", Method: http.MethodGet, Args: cobra.ExactArgs(1), Path: oneArgPath("/repositories/code/team/%s/licenses/export")}),
+		endpointCommand(g, endpointCommandConfig{Use: "activate", Short: "Activate code repository", Method: http.MethodPost, Path: staticPath("/repositories/code/activate")}),
+		endpointCommand(g, endpointCommandConfig{Use: "deactivate", Short: "Deactivate code repository", Method: http.MethodPost, Path: staticPath("/repositories/code/deactivate")}),
+		endpointCommand(g, endpointCommandConfig{Use: "clone", Short: "Clone code repository", Method: http.MethodPost, Path: staticPath("/repositories/code/clone")}),
+		endpointCommand(g, endpointCommandConfig{Use: "private-registries", Short: "Manage private registry", Method: http.MethodPost, Path: staticPath("/repositories/code/private-registries")}),
+		endpointCommand(g, endpointCommandConfig{Use: "import", Short: "Trigger repositories sync", Method: http.MethodPost, Path: staticPath("/repositories/import")}),
+		endpointCommand(g, endpointCommandConfig{Use: "sast-rules", Short: "List SAST rules", Method: http.MethodGet, Path: staticPath("/repositories/code/sast/rules")}),
+		endpointCommand(g, endpointCommandConfig{Use: "iac-rules", Short: "List IaC rules", Method: http.MethodGet, Path: staticPath("/repositories/code/iac/rules")}),
+		endpointCommand(g, endpointCommandConfig{Use: "mobile-rules", Short: "List mobile rules", Method: http.MethodGet, Path: staticPath("/repositories/code/mobile/rules")}),
+		endpointCommand(g, endpointCommandConfig{Use: "configure-pr-checks", Short: "Configure PR checks", Method: http.MethodPost, Path: staticPath("/repositories/code/continuous_integration/checks")}),
+	)
 	return cmd
 }
 
@@ -54,9 +76,6 @@ func reposList(g *cli.Globals) *cobra.Command {
 
 func runReposList(ctx context.Context, c *client.Client, r *output.Renderer, opts reposListOpts) error {
 	q := map[string]string{}
-	if opts.Team > 0 {
-		q["team_id"] = fmt.Sprintf("%d", opts.Team)
-	}
 	if opts.Search != "" {
 		q["filter_name"] = opts.Search
 	}
@@ -69,6 +88,15 @@ func runReposList(ctx context.Context, c *client.Client, r *output.Renderer, opt
 	var repos []Repo
 	if err := c.Get(ctx, "/repositories/code", q, &repos); err != nil {
 		return err
+	}
+	if opts.Team > 0 {
+		kept := repos[:0]
+		for _, repo := range repos {
+			if repo.TeamID == opts.Team {
+				kept = append(kept, repo)
+			}
+		}
+		repos = kept
 	}
 	return r.Render(repos)
 }

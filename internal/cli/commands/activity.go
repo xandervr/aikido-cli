@@ -1,6 +1,10 @@
 package commands
 
 import (
+	"fmt"
+	"strconv"
+	"time"
+
 	"github.com/spf13/cobra"
 	"github.com/xandervr/aikido-cli/internal/cli"
 )
@@ -17,10 +21,18 @@ func NewActivity(g *cli.Globals) *cobra.Command {
 			}
 			q := map[string]string{}
 			if from != "" {
-				q["start"] = from
+				ts, err := activityTimestamp(from, false)
+				if err != nil {
+					return &cli.ExitError{Code: cli.ExitUsage, Err: fmt.Errorf("--from: %w", err)}
+				}
+				q["start"] = ts
 			}
 			if to != "" {
-				q["end"] = to
+				ts, err := activityTimestamp(to, true)
+				if err != nil {
+					return &cli.ExitError{Code: cli.ExitUsage, Err: fmt.Errorf("--to: %w", err)}
+				}
+				q["end"] = ts
 			}
 			if user != "" {
 				q["user_type_filter"] = user
@@ -32,8 +44,25 @@ func NewActivity(g *cli.Globals) *cobra.Command {
 			return g.Renderer().Render(raw)
 		},
 	}
-	cmd.Flags().StringVar(&from, "from", "", "ISO date (inclusive)")
-	cmd.Flags().StringVar(&to, "to", "", "ISO date (inclusive)")
+	cmd.Flags().StringVar(&from, "from", "", "Unix timestamp, RFC3339 timestamp, or YYYY-MM-DD start date")
+	cmd.Flags().StringVar(&to, "to", "", "Unix timestamp, RFC3339 timestamp, or YYYY-MM-DD end date")
 	cmd.Flags().StringVar(&user, "user", "", "filter by user type")
 	return cmd
+}
+
+func activityTimestamp(value string, endOfDay bool) (string, error) {
+	if _, err := strconv.ParseInt(value, 10, 64); err == nil {
+		return value, nil
+	}
+	if ts, err := time.Parse(time.RFC3339, value); err == nil {
+		return strconv.FormatInt(ts.Unix(), 10), nil
+	}
+	day, err := time.Parse("2006-01-02", value)
+	if err != nil {
+		return "", fmt.Errorf("expected Unix timestamp, RFC3339 timestamp, or YYYY-MM-DD date")
+	}
+	if endOfDay {
+		day = day.Add(24*time.Hour - time.Second)
+	}
+	return strconv.FormatInt(day.Unix(), 10), nil
 }

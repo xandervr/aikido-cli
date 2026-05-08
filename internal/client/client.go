@@ -66,7 +66,11 @@ func (c *Client) Delete(ctx context.Context, path string, out any) error {
 }
 
 func (c *Client) GetRaw(ctx context.Context, path string, query map[string]string) ([]byte, string, error) {
-	req, err := c.newRequest(ctx, http.MethodGet, path, query, nil)
+	return c.Raw(ctx, http.MethodGet, path, query, nil)
+}
+
+func (c *Client) Raw(ctx context.Context, method, path string, query map[string]string, body any) ([]byte, string, error) {
+	req, err := c.newRequest(ctx, method, path, query, body)
 	if err != nil {
 		return nil, "", err
 	}
@@ -75,11 +79,11 @@ func (c *Client) GetRaw(ctx context.Context, path string, query map[string]strin
 		return nil, "", err
 	}
 	defer resp.Body.Close()
-	body, _ := io.ReadAll(resp.Body)
+	respBody, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode/100 != 2 {
-		return nil, "", parseAPIError(resp.StatusCode, body)
+		return nil, "", parseAPIError(resp.StatusCode, respBody)
 	}
-	return body, resp.Header.Get("Content-Type"), nil
+	return respBody, resp.Header.Get("Content-Type"), nil
 }
 
 func (c *Client) do(ctx context.Context, method, path string, query map[string]string, body, out any) error {

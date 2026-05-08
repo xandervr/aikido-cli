@@ -43,7 +43,7 @@ func workspaceConfigErrors(g *cli.Globals) *cobra.Command {
 				return err
 			}
 			var raw any
-			if err := c.Get(context.Background(), "/workspace/configuration-errors", nil, &raw); err != nil {
+			if err := c.Get(context.Background(), "/workspace/configurationErrors", nil, &raw); err != nil {
 				return err
 			}
 			return g.Renderer().Render(raw)

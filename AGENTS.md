@@ -51,7 +51,7 @@ pre-supplied bearer.
 cmd/aikido/                  # entry point + CLI smoke test
 internal/
   auth/                      # JWT decode, keychain creds, OAuth exchange, token cache
-  client/                    # generic HTTP client (Get/Post/Put/Delete/GetRaw) + APIError
+  client/                    # generic HTTP client (Get/Post/Put/Delete/GetRaw/Raw) + APIError
   cli/                       # cobra root, Globals, exit-code mapping
   cli/commands/              # one file per resource group; helpers.go has simpleList/simpleGet
   output/                    # Renderer: JSON when piped, table on TTY (struct-tag driven)
@@ -73,6 +73,11 @@ docs/superpowers/            # spec + plan that produced this code
   `simpleGet(g, use, short, basePath)` from `helpers.go`. Don't duplicate that
   logic in a new command file unless you need extra flags or a non-default
   body shape.
+- **Full API coverage** lives in `api.go`: `aikido api endpoints` lists the
+  checked-in documented operation catalog, and `aikido api get|post|put|delete`
+  can call any public REST path with `--query`, `--body`, `--body-file`, and
+  `--out`. Use `endpointCommand` for named wrappers around documented
+  non-trivial operations.
 - **Destructive verbs** require `--confirm` and exit with code `3` if
   missing. See `aikido teams delete` for the pattern.
 
@@ -89,11 +94,11 @@ docs/superpowers/            # spec + plan that produced this code
    (dumps the live OpenAPI doc the workspace serves).
 2. If it's a plain GET on a list/detail, register it in the appropriate
    `internal/cli/commands/<group>.go` using `simpleList` / `simpleGet`.
-3. Otherwise hand-roll the cobra subcommand, decode the response, and call
-   `g.Renderer().Render(...)`.
+3. Otherwise prefer `endpointCommand` so the wrapper gets consistent
+   `--query`, JSON body, raw response, and `--confirm` behavior.
 4. Add a row to the table-driven test in
    `internal/cli/commands/commands_table_test.go` to lock in the URL and method.
-5. Update `README.md` and the Commands table.
+5. Update `documentedEndpoints` in `api.go`, `README.md`, and the Commands table.
 
 ## Things to avoid
 
@@ -106,7 +111,8 @@ docs/superpowers/            # spec + plan that produced this code
 
 ## Reference docs
 
-- `docs/superpowers/specs/2026-04-27-aikido-cli-design.md` — design (source of truth)
+- `docs/superpowers/specs/2026-05-06-aikido-cli-api-compliance.md` — current API coverage and drift rules
+- `docs/superpowers/specs/2026-04-27-aikido-cli-design.md` — original v1 design
 - `docs/superpowers/plans/2026-04-27-aikido-cli.md` — implementation plan
 - `README.md` — user-facing docs
 - Aikido API reference: https://apidocs.aikido.dev/reference/
