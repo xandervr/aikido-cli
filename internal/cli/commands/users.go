@@ -12,6 +12,7 @@ func NewUsers(g *cli.Globals) *cobra.Command {
 	cmd.AddCommand(
 		simpleList(g, "list", "List users", "/users"),
 		simpleGet(g, "get <id>", "Get a user", "/users"),
+		simpleList(g, "ide-adoption", "List users with an active IDE token", "/users/ide/adoption"),
 		endpointCommand(g, endpointCommandConfig{Use: "rights <id>", Short: "Update user rights", Method: http.MethodPut, Args: cobra.ExactArgs(1), Path: oneArgPath("/users/%s/rights")}),
 	)
 	return cmd

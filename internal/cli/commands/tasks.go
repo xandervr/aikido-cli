@@ -12,6 +12,7 @@ func NewTasks(g *cli.Globals) *cobra.Command {
 	cmd := &cobra.Command{Use: "tasks", Short: "Task tracker integrations"}
 	cmd.AddCommand(
 		simpleList(g, "projects", "List task tracking projects", "/task_tracking/projects"),
+		simpleList(g, "integrations", "List task tracking integrations", "/task_tracking/integrations"),
 		tasksList(g),
 		endpointCommand(g, endpointCommandConfig{Use: "project-mapping", Short: "Get project mapping", Method: http.MethodGet, Path: staticPath("/task_tracking/projectMapping")}),
 		endpointCommand(g, endpointCommandConfig{Use: "map-repos", Short: "Map code repos to task tracking projects", Method: http.MethodPost, Path: staticPath("/task_tracking/mapCodeReposToProjects")}),
