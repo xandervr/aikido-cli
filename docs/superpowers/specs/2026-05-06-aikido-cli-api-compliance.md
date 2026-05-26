@@ -11,8 +11,15 @@ every documented operation reachable from the CLI.
 ## Current API Baseline
 
 The checked-in endpoint catalog in `internal/cli/commands/api.go` reflects the
-public ReadMe OpenAPI docs updated on 2026-05-07. It contains 143 HTTP
-operations across 127 documented paths.
+public ReadMe OpenAPI docs updated on 2026-05-26. It contains 145 HTTP
+operations across 129 documented paths.
+
+### 2026-05-26 sync
+
+Two endpoints added since the prior baseline:
+
+- `GET /task_tracking/integrations` — exposed as `aikido tasks integrations`.
+- `GET /users/ide/adoption` — exposed as `aikido users ide-adoption`.
 
 The authenticated live spec remains available through:
 

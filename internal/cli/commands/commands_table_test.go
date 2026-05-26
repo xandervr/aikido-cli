@@ -35,6 +35,7 @@ func TestSimpleListCommands_HitExpectedPath(t *testing.T) {
 		cmdCase("workspace introspect", NewWorkspace, []string{"introspect"}, "/openapi/spec", "GET"),
 		cmdCase("users list", NewUsers, []string{"list"}, "/users", "GET"),
 		cmdCase("users get", NewUsers, []string{"get", "42"}, "/users/42", "GET"),
+		cmdCase("users ide-adoption", NewUsers, []string{"ide-adoption"}, "/users/ide/adoption", "GET"),
 		cmdCase("containers list", NewContainers, []string{"list"}, "/containers", "GET"),
 		cmdCase("containers get", NewContainers, []string{"get", "9"}, "/containers/9", "GET"),
 		cmdCase("containers sbom", NewContainers, []string{"sbom", "9"}, "/containers/9/licenses/export", "GET"),
@@ -55,6 +56,7 @@ func TestSimpleListCommands_HitExpectedPath(t *testing.T) {
 		cmdCase("pentest get", NewPentest, []string{"get", "550e8400-e29b-41d4-a716-446655440000"}, "/pentests/assessments/550e8400-e29b-41d4-a716-446655440000/detail", "GET"),
 		cmdCase("pentest attack", NewPentest, []string{"attack", "2"}, "/pentests/issues/2/attackAnalysis", "GET"),
 		cmdCase("tasks projects", NewTasks, []string{"projects"}, "/task_tracking/projects", "GET"),
+		cmdCase("tasks integrations", NewTasks, []string{"integrations"}, "/task_tracking/integrations", "GET"),
 		cmdCase("tasks list", NewTasks, []string{"list", "7"}, "/task_tracking/projects/7/tasks", "GET"),
 		cmdCase("research cve", NewResearch, []string{"cve", "CVE-2026-1234"}, "/cve/CVE-2026-1234", "GET"),
 		cmdCaseWithQuery("research changelog", NewResearch, []string{"changelog", "jsonpath-plus", "--from", "5.1.0", "--to", "10.2.0", "--language", "JS"}, "/changelog-summary", "GET", "from_version=5.1.0&language=JS&package_name=jsonpath-plus&to_version=10.2.0"),
@@ -153,8 +155,8 @@ func TestAPIPost_SendsDocumentedBody(t *testing.T) {
 }
 
 func TestAPICatalog_CoversCurrentOpenAPISurface(t *testing.T) {
-	if len(documentedEndpoints) != 143 {
-		t.Fatalf("documented endpoint count = %d, want 143", len(documentedEndpoints))
+	if len(documentedEndpoints) != 145 {
+		t.Fatalf("documented endpoint count = %d, want 145", len(documentedEndpoints))
 	}
 	want := map[string]bool{
 		"GET /workspace/configurationErrors":                         false,
@@ -165,6 +167,8 @@ func TestAPICatalog_CoversCurrentOpenAPISurface(t *testing.T) {
 		"POST /access-tokens/code-scanning":                          false,
 		"POST /bug_bounty/program/{program_id}/report":               false,
 		"GET /virtual-machines/{virtual_machine_id}/export/{format}": false,
+		"GET /task_tracking/integrations":                            false,
+		"GET /users/ide/adoption":                                    false,
 	}
 	for _, ep := range documentedEndpoints {
 		key := ep.Method + " " + ep.Path

@@ -157,7 +157,7 @@ caches the token.
 | repos         | list, get, sbom, scan, activate/deactivate, rules, more  |
 | issues        | list, get, export, counts, issue, reachability, actions  |
 | teams         | list, create, update, delete, link, unlink, add/remove-user |
-| users         | list, get, rights                                        |
+| users         | list, get, ide-adoption, rights                          |
 | containers    | list, get, sbom, raw-sbom, scan, registries, more        |
 | clouds        | list, assets, rules, aws/azure/gcp/kubernetes, delete    |
 | domains       | list, create, delete, scan, headers, subdomains          |
@@ -170,7 +170,7 @@ caches the token.
 | compliance    | soc2, nis2, iso27001, cis, cis-aws                       |
 | custom-rules  | list, create, get, update, delete                        |
 | pentest       | get, create-draft, attack                                |
-| tasks         | projects, list, project-mapping, map-repos, link-task    |
+| tasks         | projects, integrations, list, project-mapping, map-repos, link-task |
 | local-scan    | latest                                                   |
 | endpoint-protection | activity-logs                                      |
 | code-quality  | findings                                                 |
@@ -182,7 +182,7 @@ caches the token.
 | version       | (top-level)                                              |
 
 `api endpoints` lists the current checked-in Aikido OpenAPI operation catalog
-(143 operations from the docs snapshot used for this release). `api get|post|put|delete
+(145 operations from the docs snapshot used for this release). `api get|post|put|delete
 <path>` is the full-coverage escape hatch for every public REST endpoint:
 
 ```bash
