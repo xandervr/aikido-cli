@@ -2,6 +2,7 @@ package commands
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/spf13/cobra"
 	"github.com/xandervr/aikido-cli/internal/cli"
@@ -12,7 +13,7 @@ func NewResearch(g *cli.Globals) *cobra.Command {
 	cmd.AddCommand(
 		simpleGet(g, "cve <cve-id>", "Get CVE details", "/cve"),
 		changelogCommand(g, "changelog <package>", "Package changelog summary"),
-		simpleList(g, "malware-packages", "List recently flagged malware packages", "/research/malware/packages"),
+		malwarePackagesCommand(g, "malware-packages", "List recently flagged malware packages"),
 	)
 	return cmd
 }
@@ -26,7 +27,7 @@ func NewChangelog(g *cli.Globals) *cobra.Command {
 }
 
 func NewMalwarePackages(g *cli.Globals) *cobra.Command {
-	return simpleList(g, "malware-packages", "Malware packages (shortcut)", "/research/malware/packages")
+	return malwarePackagesCommand(g, "malware-packages", "Malware packages (shortcut)")
 }
 
 func changelogCommand(g *cli.Globals, use, short string) *cobra.Command {
@@ -62,5 +63,43 @@ func changelogCommand(g *cli.Globals, use, short string) *cobra.Command {
 	_ = cmd.MarkFlagRequired("from")
 	_ = cmd.MarkFlagRequired("to")
 	_ = cmd.MarkFlagRequired("language")
+	return cmd
+}
+
+func malwarePackagesCommand(g *cli.Globals, use, short string) *cobra.Command {
+	var page, perPage int
+	var search, ecosystem string
+	cmd := &cobra.Command{
+		Use:   use,
+		Short: short,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			c, err := g.Client()
+			if err != nil {
+				return err
+			}
+			q := map[string]string{}
+			if page > 0 {
+				q["page"] = fmt.Sprintf("%d", page)
+			}
+			if perPage > 0 {
+				q["per_page"] = fmt.Sprintf("%d", perPage)
+			}
+			if search != "" {
+				q["search"] = search
+			}
+			if ecosystem != "" {
+				q["filter_ecosystem"] = ecosystem
+			}
+			var raw any
+			if err := c.Get(cmd.Context(), "/research/malware/packages", q, &raw); err != nil {
+				return err
+			}
+			return g.Renderer().Render(raw)
+		},
+	}
+	cmd.Flags().IntVar(&page, "page", 0, "page (0-indexed)")
+	cmd.Flags().IntVar(&perPage, "per-page", 0, "page size (10-20, default 20)")
+	cmd.Flags().StringVar(&search, "search", "", "search packages")
+	cmd.Flags().StringVar(&ecosystem, "ecosystem", "", "filter by ecosystem: npm|cargo|pypi|packagist|golang|maven|nuget|ruby|open_vsx|github_act|vscode|chrome|wordpress|skills_sh")
 	return cmd
 }
