@@ -7,8 +7,16 @@ COMMIT ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
 DATE ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 LDFLAGS := -X $(PKG)/internal/version.Version=$(VERSION) -X $(PKG)/internal/version.Commit=$(COMMIT) -X $(PKG)/internal/version.Date=$(DATE)
 
-# Where to install the binary. Override with `make install INSTALL_DIR=/some/path`.
-INSTALL_DIR ?= $(HOME)/.local/bin
+# Where to install the binary. Defaults to Go's bin dir (`go env GOBIN`, or
+# `$(go env GOPATH)/bin` if GOBIN is empty) so the install lands wherever Go
+# already puts binaries — typically on PATH and, for asdf/goenv-managed Go,
+# behind the shim that resolves `aikido`. Override with
+# `make install INSTALL_DIR=/some/path`.
+GOBIN := $(shell go env GOBIN)
+ifeq ($(strip $(GOBIN)),)
+GOBIN := $(shell go env GOPATH)/bin
+endif
+INSTALL_DIR ?= $(GOBIN)
 
 # Where shell completions land. Override per-shell if you keep them elsewhere.
 ZSH_COMP_DIR ?= $(HOME)/.zsh/completions
@@ -26,6 +34,10 @@ install: build
 	  *":$(INSTALL_DIR):"*) echo "✓ $(INSTALL_DIR) is on PATH" ;; \
 	  *) printf '\n  ⚠ %s is NOT on your PATH.\n  Add this to ~/.zshrc (or ~/.bashrc):\n    export PATH="%s:$$PATH"\n\n' "$(INSTALL_DIR)" "$(INSTALL_DIR)" ;; \
 	esac
+	@RESOLVED=$$(command -v aikido 2>/dev/null); \
+	if [ -n "$$RESOLVED" ] && [ "$$RESOLVED" != "$(INSTALL_DIR)/aikido" ]; then \
+	  printf '\n  ⚠ Another aikido is earlier on PATH: %s\n    It shadows the fresh install. Either remove it or move %s ahead in PATH.\n\n' "$$RESOLVED" "$(INSTALL_DIR)"; \
+	fi
 
 install-system: build
 	sudo install -m 0755 $(BIN) /usr/local/bin/aikido
