@@ -76,8 +76,9 @@ docs/superpowers/            # spec + plan that produced this code
 - **Full API coverage** lives in `api.go`: `aikido api endpoints` lists the
   checked-in documented operation catalog, and `aikido api get|post|put|delete`
   can call any public REST path with `--query`, `--body`, `--body-file`, and
-  `--out`. Use `endpointCommand` for named wrappers around documented
-  non-trivial operations.
+  `--out`. The OAuth `POST /token` operation is handled by `auth` commands.
+  Use `endpointCommand` for named wrappers around documented non-trivial
+  operations.
 - **Destructive verbs** require `--confirm` and exit with code `3` if
   missing. See `aikido teams delete` for the pattern.
 
@@ -90,8 +91,10 @@ docs/superpowers/            # spec + plan that produced this code
 
 ## Adding a new endpoint
 
-1. Find the path and shape via `aikido workspace introspect | jq '.paths."/your/path"'`
-   (dumps the live OpenAPI doc the workspace serves).
+1. Use the published docs as source of truth:
+   `https://apidocs.aikido.dev/llms.txt` links to per-operation `.md` pages
+   with OpenAPI JSON blocks. `aikido workspace introspect` is useful as an
+   authenticated cross-check, not as the canonical source.
 2. If it's a plain GET on a list/detail, register it in the appropriate
    `internal/cli/commands/<group>.go` using `simpleList` / `simpleGet`.
 3. Otherwise prefer `endpointCommand` so the wrapper gets consistent
