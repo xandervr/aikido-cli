@@ -150,7 +150,7 @@ func NewIssues(g *cli.Globals) *cobra.Command {
 		issuesGet(g),
 		issuesExport(g),
 		endpointCommand(g, endpointCommandConfig{Use: "counts", Short: "Get issue counts", Method: http.MethodGet, Path: staticPath("/issues/counts")}),
-		endpointCommand(g, endpointCommandConfig{Use: "bulk-detail", Short: "Get issue details in bulk", Method: http.MethodGet, Path: staticPath("/issues/detail/bulk")}),
+		issuesBulkDetail(g),
 		endpointCommand(g, endpointCommandConfig{Use: "issue <issue-id>", Short: "Get issue detail", Method: http.MethodGet, Args: cobra.ExactArgs(1), Path: oneArgPath("/issues/%s")}),
 		endpointCommand(g, endpointCommandConfig{Use: "reachability <issue-id>", Short: "Get issue reachability", Method: http.MethodGet, Args: cobra.ExactArgs(1), Path: oneArgPath("/issues/%s/reachability")}),
 		endpointCommand(g, endpointCommandConfig{Use: "tasks <group-id>", Short: "Get issue group tasks", Method: http.MethodGet, Args: cobra.ExactArgs(1), Path: oneArgPath("/issues/groups/%s/tasks")}),
@@ -254,6 +254,34 @@ func issuesGet(g *cli.Globals) *cobra.Command {
 			return g.Renderer().Render(raw)
 		},
 	}
+}
+
+func issuesBulkDetail(g *cli.Globals) *cobra.Command {
+	var ids string
+	var includeEPSS bool
+	cmd := &cobra.Command{
+		Use:   "bulk-detail",
+		Short: "Get details for up to 100 issues by ID",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			c, err := g.Client()
+			if err != nil {
+				return err
+			}
+			q := map[string]string{"issue_ids": ids}
+			if includeEPSS {
+				q["include_epss_score"] = "true"
+			}
+			var raw any
+			if err := c.Get(cmd.Context(), "/issues/detail/bulk", q, &raw); err != nil {
+				return err
+			}
+			return g.Renderer().Render(raw)
+		},
+	}
+	cmd.Flags().StringVar(&ids, "ids", "", "comma-separated issue IDs (max 100, required)")
+	cmd.Flags().BoolVar(&includeEPSS, "include-epss-score", false, "include EPSS score (Pro/Scale only)")
+	_ = cmd.MarkFlagRequired("ids")
+	return cmd
 }
 
 func issuesExport(g *cli.Globals) *cobra.Command {
