@@ -25,6 +25,7 @@ func NewApps(g *cli.Globals) *cobra.Command {
 		endpointCommand(g, endpointCommandConfig{Use: "update-ip-lists <app-id>", Short: "Update threat lists", Method: http.MethodPut, Args: cobra.ExactArgs(1), Path: oneArgPath("/firewall/apps/%s/ip-lists")}),
 		endpointCommand(g, endpointCommandConfig{Use: "countries <app-id>", Short: "Get countries", Method: http.MethodGet, Args: cobra.ExactArgs(1), Path: oneArgPath("/firewall/apps/%s/countries")}),
 		endpointCommand(g, endpointCommandConfig{Use: "update-countries <app-id>", Short: "Update countries", Method: http.MethodPut, Args: cobra.ExactArgs(1), Path: oneArgPath("/firewall/apps/%s/countries")}),
+		endpointCommand(g, endpointCommandConfig{Use: "users <app-id>", Short: "List Zen users", Method: http.MethodGet, Args: cobra.ExactArgs(1), Path: oneArgPath("/firewall/apps/%s/users")}),
 		endpointCommand(g, endpointCommandConfig{Use: "event <app-id> <event-id>", Short: "Get event", Method: http.MethodGet, Args: cobra.ExactArgs(2), Path: func(args []string) string { return "/firewall/apps/" + args[0] + "/events/" + args[1] }}),
 	)
 	return cmd

@@ -15,6 +15,7 @@ func NewContainers(g *cli.Globals) *cobra.Command {
 		simpleList(g, "list", "List container repositories", "/containers"),
 		simpleGet(g, "get <id>", "Get a container repo", "/containers"),
 		containersSBOM(g),
+		endpointCommand(g, endpointCommandConfig{Use: "runners <id>", Short: "List container runners", Method: http.MethodGet, Args: cobra.ExactArgs(1), Path: oneArgPath("/containers/%s/runners")}),
 		endpointCommand(g, endpointCommandConfig{Use: "delete <id>", Short: "Delete container", Method: http.MethodDelete, Args: cobra.ExactArgs(1), Path: oneArgPath("/containers/%s"), Confirm: true}),
 		endpointCommand(g, endpointCommandConfig{Use: "raw-sbom <id>", Short: "Export raw SBOM", Method: http.MethodGet, Args: cobra.ExactArgs(1), Path: oneArgPath("/containers/%s/sbom/exportRaw")}),
 		endpointCommand(g, endpointCommandConfig{Use: "sensitivity <id>", Short: "Update sensitivity", Method: http.MethodPut, Args: cobra.ExactArgs(1), Path: oneArgPath("/containers/%s/sensitivity")}),
