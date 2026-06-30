@@ -40,6 +40,13 @@ func NewRepos(g *cli.Globals) *cobra.Command {
 		endpointCommand(g, endpointCommandConfig{Use: "connectivity <id>", Short: "Update connectivity", Method: http.MethodPut, Args: cobra.ExactArgs(1), Path: oneArgPath("/repositories/code/%s/connectivity")}),
 		endpointCommand(g, endpointCommandConfig{Use: "exclude-path <id>", Short: "Add an exclude path", Method: http.MethodPost, Args: cobra.ExactArgs(1), Path: oneArgPath("/repositories/code/%s/exclude-path")}),
 		endpointCommand(g, endpointCommandConfig{Use: "remove-exclude-path <id>", Short: "Remove an exclude path", Method: http.MethodPost, Args: cobra.ExactArgs(1), Path: oneArgPath("/repositories/code/%s/exclude-path/remove")}),
+		endpointCommand(g, endpointCommandConfig{Use: "add-label <id>", Short: "Add code repository label", Method: http.MethodPost, Args: cobra.ExactArgs(1), Path: oneArgPath("/repositories/code/%s/labels")}),
+		endpointCommand(g, endpointCommandConfig{Use: "update-label <id> <label-id>", Short: "Update code repository label", Method: http.MethodPost, Args: cobra.ExactArgs(2), Path: func(args []string) string {
+			return "/repositories/code/" + args[0] + "/labels/" + args[1]
+		}}),
+		endpointCommand(g, endpointCommandConfig{Use: "remove-label <id> <label-id>", Short: "Remove code repository label", Method: http.MethodDelete, Args: cobra.ExactArgs(2), Path: func(args []string) string {
+			return "/repositories/code/" + args[0] + "/labels/" + args[1]
+		}, Confirm: true}),
 		endpointCommand(g, endpointCommandConfig{Use: "team-sbom <team-id>", Short: "Export SBOM for a team", Method: http.MethodGet, Args: cobra.ExactArgs(1), Path: oneArgPath("/repositories/code/team/%s/licenses/export")}),
 		endpointCommand(g, endpointCommandConfig{Use: "activate", Short: "Activate code repository", Method: http.MethodPost, Path: staticPath("/repositories/code/activate")}),
 		endpointCommand(g, endpointCommandConfig{Use: "deactivate", Short: "Deactivate code repository", Method: http.MethodPost, Path: staticPath("/repositories/code/deactivate")}),

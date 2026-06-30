@@ -153,26 +153,26 @@ caches the token.
 |---------------|----------------------------------------------------------|
 | auth          | login, logout, status, refresh                           |
 | api           | endpoints, get, post, put, delete                        |
-| workspace     | info, config-errors, introspect                          |
-| repos         | list, get, sbom, scan, activate/deactivate, rules, more  |
-| issues        | list, get, export, counts, issue, reachability, actions  |
+| workspace     | info, config-errors, sla-settings, introspect            |
+| repos         | list, get, sbom, scan, labels, activate/deactivate, rules, more |
+| issues        | list, get, export, counts, issue, reachability, notes, tasks, actions |
 | teams         | list, create, update, delete, link, unlink, add/remove-user |
 | users         | list, get, ide-adoption, rights                          |
-| containers    | list, get, sbom, raw-sbom, scan, registries, more        |
+| containers    | list, get, runners, sbom, raw-sbom, scan, registries, more |
 | clouds        | list, assets, rules, aws/azure/gcp/kubernetes, delete    |
 | domains       | list, create, delete, scan, headers, subdomains          |
-| apps          | list, create, get, update, delete, blocklists, events    |
+| apps          | list, create, get, update, delete, users, blocklists, events |
 | vms           | list, sbom                                               |
 | licenses      | list, overwrite                                          |
 | webhooks      | list, add, delete                                        |
 | activity      | (top-level — `--from --to --user`)                       |
-| pr-checks     | list                                                     |
+| pr-checks     | list, issue-actions                                      |
 | compliance    | soc2, nis2, iso27001, cis, cis-aws                       |
 | custom-rules  | list, create, get, update, delete                        |
 | pentest       | get, create-draft, attack                                |
 | tasks         | projects, integrations, list, project-mapping, map-repos, link-task |
 | local-scan    | latest                                                   |
-| endpoint-protection | activity-logs                                      |
+| endpoint-protection | activity-logs, devices, installed-packages, permission-groups, exceptions |
 | code-quality  | findings                                                 |
 | access-tokens | code-scanning                                            |
 | bug-bounty    | validate-report                                          |
@@ -182,8 +182,9 @@ caches the token.
 | version       | (top-level)                                              |
 
 `api endpoints` lists the current checked-in Aikido OpenAPI operation catalog
-(145 operations from the docs snapshot used for this release). `api get|post|put|delete
-<path>` is the full-coverage escape hatch for every public REST endpoint:
+(161 operations from the docs snapshot used for this release). `api get|post|put|delete
+<path>` is the full-coverage escape hatch for public REST endpoints; the OAuth
+`POST /token` operation is handled by `aikido auth login` and `aikido auth refresh`:
 
 ```bash
 aikido api endpoints --search domains

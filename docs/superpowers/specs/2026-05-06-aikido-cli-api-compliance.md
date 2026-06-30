@@ -11,8 +11,34 @@ every documented operation reachable from the CLI.
 ## Current API Baseline
 
 The checked-in endpoint catalog in `internal/cli/commands/api.go` reflects the
-public ReadMe OpenAPI docs updated on 2026-05-26. It contains 145 HTTP
-operations across 129 documented paths.
+public ReadMe OpenAPI docs fetched on 2026-06-30. It contains 161 HTTP
+operations across the documented public REST and OAuth OpenAPI pages.
+
+### 2026-06-30 sync
+
+The docs snapshot adds 16 operations since the prior baseline:
+
+- `POST /token` — covered by `aikido auth login` / `aikido auth refresh`.
+- `GET /workspace/slaSettings` — exposed as `aikido workspace sla-settings`.
+- `GET /containers/{container_repo_id}/runners` — exposed as `aikido containers runners`.
+- `GET /firewall/apps/{app_id}/users` — exposed as `aikido apps users`.
+- `GET /report/ciScans/issueActions` — exposed as `aikido pr-checks issue-actions`.
+- `GET /issues/groups/{issue_group_id}/notes` — exposed as `aikido issues notes`.
+- `PUT /issues/{issue_id}/solve` — exposed as `aikido issues solve`.
+- `POST /repositories/code/{code_repo_id}/labels` — exposed as `aikido repos add-label`.
+- `POST /repositories/code/{code_repo_id}/labels/{label_id}` — exposed as `aikido repos update-label`.
+- `DELETE /repositories/code/{code_repo_id}/labels/{label_id}` — exposed as `aikido repos remove-label --confirm`.
+- `GET /endpoint-protection/devices` — exposed as `aikido endpoint-protection devices`.
+- `GET /endpoint-protection/installed-packages` — exposed as `aikido endpoint-protection installed-packages`.
+- `GET /endpoint-protection/permission-groups` — exposed as `aikido endpoint-protection permission-groups`.
+- `GET /endpoint-protection/{ecosystem}/exceptions` — exposed as `aikido endpoint-protection exceptions`.
+- `POST /endpoint-protection/{ecosystem}/exceptions` — exposed as `aikido endpoint-protection add-exception`.
+- `DELETE /endpoint-protection/exceptions/{package_exception_id}` — exposed as `aikido endpoint-protection remove-exception --confirm`.
+
+Two summaries were also realigned with the docs:
+
+- `GET /endpoint-protection/activityLogs` — `List endpoint activity logs`.
+- `GET /licenses` — `List & Search SBOM`.
 
 ### 2026-05-26 sync
 

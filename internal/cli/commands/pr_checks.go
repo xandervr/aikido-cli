@@ -1,6 +1,8 @@
 package commands
 
 import (
+	"net/http"
+
 	"github.com/spf13/cobra"
 	"github.com/xandervr/aikido-cli/internal/cli"
 )
@@ -28,6 +30,14 @@ func NewPRChecks(g *cli.Globals) *cobra.Command {
 		},
 	}
 	listCmd.Flags().StringVar(&repo, "repo", "", "filter by repo ID")
-	cmd.AddCommand(listCmd)
+	cmd.AddCommand(
+		listCmd,
+		endpointCommand(g, endpointCommandConfig{
+			Use:    "issue-actions",
+			Short:  "List PR check manual actions",
+			Method: http.MethodGet,
+			Path:   staticPath("/report/ciScans/issueActions"),
+		}),
+	)
 	return cmd
 }

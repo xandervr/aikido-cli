@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -11,7 +12,17 @@ import (
 
 func NewWorkspace(g *cli.Globals) *cobra.Command {
 	cmd := &cobra.Command{Use: "workspace", Short: "Workspace info and configuration"}
-	cmd.AddCommand(workspaceInfo(g), workspaceConfigErrors(g), workspaceIntrospect(g))
+	cmd.AddCommand(
+		workspaceInfo(g),
+		workspaceConfigErrors(g),
+		workspaceIntrospect(g),
+		endpointCommand(g, endpointCommandConfig{
+			Use:    "sla-settings",
+			Short:  "Get SLA settings",
+			Method: http.MethodGet,
+			Path:   staticPath("/workspace/slaSettings"),
+		}),
+	)
 	return cmd
 }
 
